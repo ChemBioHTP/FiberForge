@@ -1,6 +1,7 @@
 # large simulation siles
 mdcrd
-
+.DS_Store
+*.netcdf
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

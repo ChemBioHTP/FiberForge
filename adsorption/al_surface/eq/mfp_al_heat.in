@@ -18,5 +18,5 @@ Heat
   gamma_ln=2.0,
   ig=-1,
   ioutfm=1, ntwv=-1,
-  ntr=1, restraintmask=':10-2057', restraint_wt=50.0,
+  ntr=1, restraintmask=':78-8269', restraint_wt=50.0,
  /
