@@ -1,0 +1,5 @@
+source leaprc.protein.ff14SB
+source leaprc.interface_v1_5
+com = loadpdb mfp_al_recenter.pdb
+saveamberparm com mfp_al.prmtop mfp_al.inpcrd
+quit
