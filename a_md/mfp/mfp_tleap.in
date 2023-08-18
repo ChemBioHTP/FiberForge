@@ -1,0 +1,12 @@
+source leaprc.protein.ff14SB
+source leaprc.gaff
+source leaprc.water.tip3p
+
+unprot = loadpdb mfp.pdb
+savepdb unprot mfp_prot.pdb
+
+mol = loadpdb mfp_prot.pdb
+solvateoct mol TIP3PBOX 16
+savepdb mol mfp_solvated.pdb
+saveamberparm mol mfp.prmtop mfp.inpcrd
+quit
