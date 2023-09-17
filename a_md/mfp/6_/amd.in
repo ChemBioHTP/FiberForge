@@ -8,7 +8,7 @@ vt-continue
   ntt=3, gamma_ln=2.0,
   temp0=300.0,ioutfm=1,iwrap=1,
   iamd=3,
-  ethreshd=827, alphad=46.4,
-  ethreshp=-44212, alphap=2916,
+  ethreshd=1432, alphad=61.6,
+  ethreshp=-288819, alphap=30660,
  /
 
