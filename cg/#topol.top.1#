@@ -1,0 +1,13 @@
+#include "martini.itp"
+
+
+
+#include "Protein_A.itp"
+
+[ system ]
+; name
+Martini system from sa8.pdb
+
+[ molecules ]
+; name        number
+Protein_A 	 1

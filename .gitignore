@@ -1,4 +1,6 @@
 # large simulation siles
+*.trr
+mdcrd.nc
 mdcrd
 .DS_Store
 *.netcdf
