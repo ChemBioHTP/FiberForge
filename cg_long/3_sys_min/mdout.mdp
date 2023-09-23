@@ -2,7 +2,7 @@
 ;	File 'mdout.mdp' was generated
 ;	By user: kieran (501)
 ;	On host: Kierans-MacBook-Pro.local
-;	At date: Sat Sep 23 20:56:10 2023
+;	At date: Sat Sep 23 21:07:45 2023
 ;
 ;	Created by:
 ;	                :-) GROMACS - gmx grompp, 2023.2-Homebrew (-:
@@ -47,7 +47,7 @@ ld-seed                  = -1
 ; ENERGY MINIMIZATION OPTIONS
 ; Force tolerance and initial step-size
 emtol                    = 20.0
-emstep                   = 0.025
+emstep                   = 0.0025
 ; Max number of iterations in relax-shells
 niter                    = 20
 ; Step size (ps^2) for minimization of flexible constraints
@@ -171,7 +171,7 @@ annealing-temp           =
 ; GENERATE VELOCITIES FOR STARTUP RUN
 gen-vel                  = no
 gen-temp                 = 300
-gen-seed                 = -173539337
+gen-seed                 = -4270342
 
 ; OPTIONS FOR BONDS    
 constraints              = none
