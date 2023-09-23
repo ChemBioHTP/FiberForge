@@ -1,0 +1,15 @@
+#include "martini_v2.2.itp"
+#include "martini_v2.0_ions.itp"
+
+
+
+#include "Protein_A.itp"
+
+[ system ]
+; name
+Martini system from sa8.pdb
+
+[ molecules ]
+; name        number
+Protein_A 	 1
+W		15625
