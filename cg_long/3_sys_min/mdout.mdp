@@ -2,16 +2,16 @@
 ;	File 'mdout.mdp' was generated
 ;	By user: kieran (501)
 ;	On host: Kierans-MacBook-Pro.local
-;	At date: Sat Sep 23 20:54:38 2023
+;	At date: Sat Sep 23 20:56:10 2023
 ;
 ;	Created by:
 ;	                :-) GROMACS - gmx grompp, 2023.2-Homebrew (-:
 ;	
 ;	Executable:   /opt/homebrew/bin/../Cellar/gromacs/2023.2/bin/gmx
 ;	Data prefix:  /opt/homebrew/bin/../Cellar/gromacs/2023.2
-;	Working dir:  /Users/kieran/projects/biomatsims/cg_long/2_ions
+;	Working dir:  /Users/kieran/projects/biomatsims/cg_long/3_sys_min
 ;	Command line:
-;	  gmx grompp -f ions.mdp -c ../sa8_cg_12_water.gro -p ../topol.top -o ions.tpr
+;	  gmx grompp -f sa_water_min.mdp -c ../2_ions/sa8_cg_12_water_ions.gro -p ../topol.top -o em.tpr -maxwarn 1
 
 ; VARIOUS PREPROCESSING OPTIONS
 ; Preprocessor information: use cpp syntax.
@@ -25,7 +25,7 @@ integrator               = steep
 ; Start time and timestep in ps
 tinit                    = 0
 dt                       = 0.001
-nsteps                   = 50000
+nsteps                   = 10000
 ; For exact run continuation or redoing part of a run
 init-step                = 0
 ; Part index is updated automatically on checkpointing (keeps files separate)
@@ -46,8 +46,8 @@ ld-seed                  = -1
 
 ; ENERGY MINIMIZATION OPTIONS
 ; Force tolerance and initial step-size
-emtol                    = 1000.0
-emstep                   = 0.01
+emtol                    = 20.0
+emstep                   = 0.025
 ; Max number of iterations in relax-shells
 niter                    = 20
 ; Step size (ps^2) for minimization of flexible constraints
@@ -95,7 +95,7 @@ rlist                    = 1
 
 ; OPTIONS FOR ELECTROSTATICS AND VDW
 ; Method for doing electrostatics
-coulombtype              = cutoff
+coulombtype              = PME
 coulomb-modifier         = Potential-shift-Verlet
 rcoulomb-switch          = 0
 rcoulomb                 = 1.0
@@ -171,7 +171,7 @@ annealing-temp           =
 ; GENERATE VELOCITIES FOR STARTUP RUN
 gen-vel                  = no
 gen-temp                 = 300
-gen-seed                 = -2195745
+gen-seed                 = -173539337
 
 ; OPTIONS FOR BONDS    
 constraints              = none
