@@ -1,0 +1,11 @@
+#
+# Protein solvated by water and ions
+#
+
+tolerance 10.0
+structure sa16.pdb
+    inside cube 0. 0. 0. 150.
+    number 2 
+end structure
+
+output sa16_2.pdb
