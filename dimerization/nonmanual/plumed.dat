@@ -1,0 +1,11 @@
+# treat each molecule as whole
+WHOLEMOLECULES ENTITY0=1-5, ENTITY1=6-10 # rebuild molecules that are split by the periodic boundary conditions, avoid discontinuities changes in the CV value and artifacts in the calculations
+
+# define atoms for distance
+dist: DISTANCE ATOMS=5,10 # calculate the distance between the central atom of each molecule
+
+# metadynamics argument
+metad: METAD ARG=dist PACE=500 HEIGHT=0.2 SIGMA=0.05 FILE=HILLS BIASFACTOR=10 GRID_MIN=0.1 GRID_MAX=5.0 GRID_BIN=500 TEMP=300 # in HILLS the following variables will be written: time, dist, sigma, height, biasfactor
+
+# monitor distance
+PRINT STRIDE=500 ARG=dist,metad.bias FILE=COLVAR # print the calculated distance and bias in COLVAR every 500 steps, COLVAR will contain three columns time, dist and bias
