@@ -11,12 +11,10 @@
 #SBATCH --export=NONE
 #SBATCH --output=test_%J.txt
 
-WORKING_DIR=/home/nehilpkd/projects/biomatsims/a_md/mfp/4_
-cd $WORKING_DIR
 
 
 source /home/shaoq1/bin/amber_env/amber-accre.sh
 
-pmemd.cuda -O -i density.in -o density.out -p ../*.prmtop -c ../4_/*.rst -r density.rst -ref ../4_/*.rst
+pmemd.cuda -O -i heat.in -o heat.out -p ../*.prmtop -c ../4_sys_eq/*.rst -r heat.rst -ref ../4_sys_eq/*.rst
 
 echo "The End"

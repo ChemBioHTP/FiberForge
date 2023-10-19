@@ -11,8 +11,6 @@
 #SBATCH --export=NONE
 #SBATCH --output=test_%J.txt
 
-WORKING_DIR=/home/nehilpkd/projects/biomatsims/a_md/0_
-cd $WORKING_DIR
 
 
 source /home/shaoq1/bin/amber_env/amber-accre.sh

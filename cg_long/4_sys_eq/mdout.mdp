@@ -1,15 +1,15 @@
 ;
 ;	File 'mdout.mdp' was generated
-;	By user: kieran (501)
-;	On host: Kierans-MacBook-Pro.local
-;	At date: Wed Sep 20 12:21:05 2023
+;	By user: nehilpkd (892803)
+;	On host: gw344.vampire
+;	At date: Sat Sep 23 15:11:25 2023
 ;
 ;	Created by:
-;	                :-) GROMACS - gmx grompp, 2023.2-Homebrew (-:
+;	                 :-) GROMACS - gmx grompp, 2020-UNCHECKED (-:
 ;	
-;	Executable:   /opt/homebrew/bin/../Cellar/gromacs/2023.2/bin/gmx
-;	Data prefix:  /opt/homebrew/bin/../Cellar/gromacs/2023.2
-;	Working dir:  /Users/kieran/projects/biomatsims/cg/4_sys_eq
+;	Executable:   /accre/arch/easybuild/software/MPI/GCC/8.2.0/OpenMPI/3.1.4/GROMACS/2020/bin/gmx
+;	Data prefix:  /accre/arch/easybuild/software/MPI/GCC/8.2.0/OpenMPI/3.1.4/GROMACS/2020
+;	Working dir:  /panfs/accrepfs.vampire/home/nehilpkd/projects/biomatsims/cg_long/4_sys_eq
 ;	Command line:
 ;	  gmx grompp -f nvt.mdp -c ../3_sys_min/em.gro -r ../3_sys_min/em.gro -p ../topol.top -o nvt.tpr -maxwarn 1
 
@@ -25,13 +25,11 @@ integrator               = md
 ; Start time and timestep in ps
 tinit                    = 0
 dt                       = 0.025
-nsteps                   = 500000
+nsteps                   = 10000000
 ; For exact run continuation or redoing part of a run
 init-step                = 0
 ; Part index is updated automatically on checkpointing (keeps files separate)
 simulation-part          = 1
-; Multiple time-stepping
-mts                      = no
 ; mode for center of mass motion removal
 comm-mode                = Linear
 ; number of steps for center of mass motion removal
@@ -130,8 +128,6 @@ epsilon-surface          = 0
 implicit-solvent         = no
 
 ; OPTIONS FOR WEAK COUPLING ALGORITHMS
-ensemble-temperature-setting = auto
-ensemble-temperature     = -1
 ; Temperature coupling  
 tcoupl                   = V-rescale
 nsttcouple               = -1
@@ -155,8 +151,28 @@ refcoord-scaling         = No
 
 ; OPTIONS FOR QMMM calculations
 QMMM                     = no
-; Groups treated with MiMiC
+; Groups treated Quantum Mechanically
 QMMM-grps                = 
+; QM method             
+QMmethod                 = 
+; QMMM scheme           
+QMMMscheme               = normal
+; QM basisset           
+QMbasis                  = 
+; QM charge             
+QMcharge                 = 
+; QM multiplicity       
+QMmult                   = 
+; Surface Hopping       
+SH                       = 
+; CAS space options     
+CASorbitals              = 
+CASelectrons             = 
+SAon                     = 
+SAoff                    = 
+SAsteps                  = 
+; Scale factor for MM charges
+MMChargeScaleFactor      = 1
 
 ; SIMULATED ANNEALING  
 ; Type of annealing for each temperature group (no/single/periodic)
@@ -171,7 +187,7 @@ annealing-temp           =
 ; GENERATE VELOCITIES FOR STARTUP RUN
 gen_vel                  = yes
 gen_temp                 = 300
-gen_seed                 = -1694523461
+gen_seed                 = -1
 
 ; OPTIONS FOR BONDS    
 constraints              = none
@@ -261,15 +277,11 @@ temperature-lambdas      =
 calc-lambda-neighbors    = 1
 init-lambda-weights      = 
 dhdl-print-energy        = no
-sc-function              = beutler
 sc-alpha                 = 0
 sc-power                 = 1
 sc-r-power               = 6
 sc-sigma                 = 0.3
 sc-coul                  = no
-sc-gapsys-scale-linpoint-lj = 0.85
-sc-gapsys-scale-linpoint-q = 0.3
-sc-gapsys-sigma-lj       = 0.3
 separate-dhdl-file       = yes
 dhdl-derivatives         = yes
 dh_hist_size             = 0
@@ -316,6 +328,3 @@ electric-field-z         = 0 0 0 0
 
 ; Density guided simulation
 density-guided-simulation-active = false
-
-; QM/MM with CP2K
-qmmm-cp2k-active         = false
