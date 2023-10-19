@@ -1,0 +1,17 @@
+#
+# A mixture of water and urea
+#
+
+tolerance 2.0
+filetype pdb
+output SA_dimer.pdb
+
+structure SA_A.pdb
+  number 1
+  inside box 0. 0. 0. 100. 100. 100.
+end structure
+
+structure SA_B.pdb
+  number 1
+  inside box 0. 0. 0. 100. 100. 100.
+end structure
