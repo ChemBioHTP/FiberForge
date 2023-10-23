@@ -1,0 +1,22 @@
+#!/bin/bash
+#SBATCH --job-name=foo_amb
+#SBATCH --account=csb_gpu_acc
+#SBATCH --partition=pascal
+#SBATCH --gres=gpu:1
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=1
+#SBATCH --mem=10G
+#SBATCH --time=05:00:00
+#SBATCH --no-requeue
+#SBATCH --export=NONE
+#SBATCH --output=test_%J.txt
+
+WORKING_DIR=/home/nehilpkd/projects/biomatsims/aggregation/4_
+cd $WORKING_DIR
+
+
+source /home/shaoq1/bin/amber_env/amber-accre.sh
+
+pmemd.cuda -O -i density.in -o density.out -p ../*.prmtop -c ../4_/*.rst -r density.rst -ref ../4_/*.rst
+
+echo "The End"

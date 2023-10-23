@@ -69,3 +69,13 @@ PLUMED:   [2] Laio and Parrinello, PNAS 99, 12562 (2002)
 PLUMED:   [3] Barducci, Bussi, and Parrinello, Phys. Rev. Lett. 100, 020603 (2008)
 PLUMED: Please read and cite where appropriate!
 PLUMED: Finished setup
+Note: The following floating-point exceptions are signalling: IEEE_INVALID_FLAG IEEE_OVERFLOW_FLAG IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+PLUMED:                                               Cycles        Total      Average      Minumum      Maximum
+PLUMED:                                                    1   737.708632   737.708632   737.708632   737.708632
+PLUMED: 1 Prepare dependencies                       5000000     2.657027     0.000001     0.000000     0.000244
+PLUMED: 2 Sharing data                               5000000   330.599359     0.000066     0.000060     0.013153
+PLUMED: 3 Waiting for data                           5000000     1.252464     0.000000     0.000000     0.013004
+PLUMED: 4 Calculating (forward loop)                 5000000    89.705086     0.000018     0.000014     0.001748
+PLUMED: 5 Applying (backward loop)                   5000000   265.974826     0.000053     0.000049     0.015119
+PLUMED: 6 Update                                     5000000    11.912413     0.000002     0.000001     0.118924
+The End

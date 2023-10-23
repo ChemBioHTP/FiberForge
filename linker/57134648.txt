@@ -1,0 +1,128 @@
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+Finished step 1 
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+Finished step 2
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+Finished step 3
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG IEEE_DENORMAL
+Finished step 4
++++ Loading the PLUMED kernel runtime +++
++++ PLUMED_KERNEL="/accre/arch/easybuild/software/MPI/GCC/8.2.0/OpenMPI/3.1.4/PLUMED/2.5.2-Python-3.7.2/lib/libplumedKernel.so" +++
+PLUMED: PLUMED is starting
+PLUMED: Version: 2.5.2 (git: Unknown) compiled on Apr 17 2020 at 13:06:00
+PLUMED: Please cite this paper when using PLUMED [1]
+PLUMED: For further information see the PLUMED web page at http://www.plumed.org
+PLUMED: Root: /accre/arch/easybuild/software/MPI/GCC/8.2.0/OpenMPI/3.1.4/PLUMED/2.5.2-Python-3.7.2/lib/plumed
+PLUMED: For installed feature, see /accre/arch/easybuild/software/MPI/GCC/8.2.0/OpenMPI/3.1.4/PLUMED/2.5.2-Python-3.7.2/lib/plumed/src/config/config.txt
+PLUMED: Molecular dynamics engine: amber
+PLUMED: Precision of reals: 8
+PLUMED: Running over 1 node
+PLUMED: Number of threads: 1
+PLUMED: Cache line size: 512
+PLUMED: Number of atoms: 39319
+PLUMED: File suffix: 
+PLUMED: FILE: plumed.dat
+PLUMED: Action COM
+PLUMED:   with label g1
+PLUMED:   serial associated to this virtual atom is 39320
+PLUMED:   of atoms:
+PLUMED:  133 134 135 136 137 138 139 140 141 142 143 144 145 146 147 148 149 150 151 152 153 154 155 156 157
+PLUMED:  158 159 160 161 162 163 164 165 166 167 168 169 170 171 172 173 174 175 176 177 178 179 180 181 182
+PLUMED:  183 184 185 186 187 188 189 190 191 192 193 194 195 196 197 198 199 200 201 202 203 204 205 206 207
+PLUMED:  208 209 210 211 212 213 214 215 216 217 218 219 220 221 222 223 224 225 226 227 228 229
+PLUMED:   mass weighted
+PLUMED:   broken molecules will be rebuilt assuming atoms are in the proper order
+PLUMED: Action COM
+PLUMED:   with label g2
+PLUMED:   serial associated to this virtual atom is 39321
+PLUMED:   of atoms:
+PLUMED:  762 763 764 765 766 767 768 769 770 771 772 773 774 775 776 777 778 779 780 781 782 783 784 785 786
+PLUMED:  787 788 789 790 791 792 793 794 795 796 797 798 799 800 801 802 803 804 805 806 807 808 809 810 811
+PLUMED:  812 813 814 815 816 817 818 819 820 821 822 823 824 825 826 827 828 829 830 831 832 833 834 835 836
+PLUMED:  837 838 839 840 841 842 843 844 845 846 847 848 849 850 851 852 853 854 855 856 857 858
+PLUMED:   mass weighted
+PLUMED:   broken molecules will be rebuilt assuming atoms are in the proper order
+PLUMED: Action DISTANCE
+PLUMED:   with label dist
+PLUMED:   between atoms 39320 39321
+PLUMED:   using periodic boundary conditions
+PLUMED: Action METAD
+PLUMED:   with label metad
+PLUMED:   with arguments dist
+PLUMED:   added component to this action:  metad.bias 
+PLUMED:   Gaussian width  0.200000  Gaussian height 0.500000
+PLUMED:   Gaussian deposition pace 500
+PLUMED:   Gaussian file HILLS
+PLUMED:   Well-Tempered Bias Factor 10.000000
+PLUMED:   Hills relaxation time (tau) 44.898095
+PLUMED:   KbT 2.494339
+PLUMED:   Grid min 0.1
+PLUMED:   Grid max 5.0
+PLUMED:   Grid bin 500
+PLUMED:   Grid uses spline interpolation
+PLUMED:   added component to this action:  metad.work 
+PLUMED:   Bibliography [2][3]
+PLUMED: Action PRINT
+PLUMED:   with label @4
+PLUMED:   with stride 500
+PLUMED:   with arguments dist metad.bias
+PLUMED:   on file COLVAR
+PLUMED:   with format  %f
+PLUMED: END FILE: plumed.dat
+PLUMED: Timestep: 0.002000
+PLUMED: KbT: 2.494323
+PLUMED: Relevant bibliography:
+PLUMED:   [1] Tribello, Bonomi, Branduardi, Camilloni, and Bussi, Comput. Phys. Commun. 185, 604 (2014)
+PLUMED:   [2] Laio and Parrinello, PNAS 99, 12562 (2002)
+PLUMED:   [3] Barducci, Bussi, and Parrinello, Phys. Rev. Lett. 100, 020603 (2008)
+PLUMED: Please read and cite where appropriate!
+PLUMED: Finished setup
+PLUMED: 
+PLUMED: 
+PLUMED: ################################################################################
+PLUMED: 
+PLUMED: 
+PLUMED: +++ PLUMED error
+PLUMED: +++ at Grid.cpp:187, function PLMD::Grid::index_t PLMD::Grid::getIndex(const std::vector<unsigned int>&) const
+PLUMED: +++ message follows +++
+PLUMED: ERROR: the system is looking for a value outside the grid along the 0 (dist) index!
+PLUMED: 
+PLUMED: ################################################################################
+PLUMED: 
+terminate called after throwing an instance of 'PLMD::ExceptionError'
+  what():  
++++ PLUMED error
++++ at Grid.cpp:187, function PLMD::Grid::index_t PLMD::Grid::getIndex(const std::vector<unsigned int>&) const
++++ message follows +++
+ERROR: the system is looking for a value outside the grid along the 0 (dist) index!
+
+Program received signal SIGABRT: Process abort signal.
+
+Backtrace for this error:
+#0  0x2ba0b29d6dfd in ???
+#1  0x2ba0b29d6013 in ???
+#2  0x2ba0b2ea93ff in ???
+#3  0x2ba0b2ea9387 in ???
+#4  0x2ba0b2eaaa77 in ???
+#5  0x2ba0b28bf8f2 in _ZN9__gnu_cxx27__verbose_terminate_handlerEv
+	at ../../../../libstdc++-v3/libsupc++/vterminate.cc:95
+#6  0x2ba0b28c5a75 in _ZN10__cxxabiv111__terminateEPFvvE
+	at ../../../../libstdc++-v3/libsupc++/eh_terminate.cc:47
+#7  0x2ba0b28c5ab0 in _ZSt9terminatev
+	at ../../../../libstdc++-v3/libsupc++/eh_terminate.cc:57
+#8  0x2ba0b28c5d35 in __cxa_rethrow
+	at ../../../../libstdc++-v3/libsupc++/eh_throw.cc:133
+#9  0x2ba10a289c89 in ???
+#10  0x2ba10a4bccec in ???
+#11  0x662a3a in ???
+#12  0x662e65 in ???
+#13  0x663db8 in ???
+#14  0x663cfa in ???
+#15  0x54ade7 in ???
+#16  0x588ff5 in ???
+#17  0x4c213c in ???
+#18  0x2ba0b2e95554 in ???
+#19  0x4db3bd in ???
+#20  0xffffffffffffffff in ???
+/var/spool/slurmd.gpu0014/job57134648/slurm_script: line 48: 26284 Aborted                 pmemd.cuda -O -i prod.in -o prod.out -p ../*.prmtop -c ../5_meta_COM/heat.rst -r heat.rst
+The End

@@ -1,24 +1,24 @@
 
- NSTEP =   900000   TIME(PS) =    2300.000  TEMP(K) =   300.34  PRESS =   -45.4
- Etot   =   -100470.6579  EKtot   =     23557.8535  EPtot      =   -124028.5114
- BOND   =       159.2353  ANGLE   =       384.3657  DIHED      =       616.2599
- 1-4 NB =       186.9006  1-4 EEL =      3128.6929  VDWAALS    =     17789.7181
- EELEC  =   -146293.6839  EHBOND  =         0.0000  RESTRAINT  =         0.0000
- EKCMT  =     11552.1859  VIRIAL  =     11937.5104  VOLUME     =    395883.5817
-                                                    Density    =         0.9936
+ NSTEP =   550000   TIME(PS) =   11600.000  TEMP(K) =   297.77  PRESS =  -116.7
+ Etot   =   -100343.6077  EKtot   =     23356.9551  EPtot      =   -123700.5628
+ BOND   =       151.7935  ANGLE   =       394.4672  DIHED      =       580.9939
+ 1-4 NB =       189.6452  1-4 EEL =      3141.3879  VDWAALS    =     17661.6840
+ EELEC  =   -145820.5345  EHBOND  =         0.0000  RESTRAINT  =         0.0000
+ EKCMT  =     11367.3383  VIRIAL  =     12420.0847  VOLUME     =    397446.7531
+                                                    Density    =         0.9897
  ------------------------------------------------------------------------------
 | Current Timing Info
 | -------------------
-| Total steps:   5000000 | Completed:    900000 ( 18.0%) | Remaining:   4100000
+| Total steps:  50000000 | Completed:    550000 (  1.1%) | Remaining:  49450000
 |
-| Average timings for last  100000 steps:
-|     Elapsed(s) =     286.90 Per Step(ms) =       2.87
-|         ns/day =      60.23   seconds/ns =    1434.52
+| Average timings for last   22000 steps:
+|     Elapsed(s) =      64.72 Per Step(ms) =       2.94
+|         ns/day =      58.74   seconds/ns =    1470.94
 |
 | Average timings for all steps:
-|     Elapsed(s) =    2558.71 Per Step(ms) =       2.84
-|         ns/day =      60.78   seconds/ns =    1421.50
+|     Elapsed(s) =    1615.10 Per Step(ms) =       2.94
+|         ns/day =      58.84   seconds/ns =    1468.28
 |
 |
-| Estimated time remaining:       3.2 hours.
+| Estimated time remaining:      40.3 hours.
  ------------------------------------------------------------------------------

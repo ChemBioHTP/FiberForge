@@ -1,0 +1,13 @@
+source leaprc.protein.ff14SB
+source leaprc.gaff
+source leaprc.water.tip3p
+
+unprot = loadpdb SA_dimer.pdb
+savepdb unprot sa_prot.pdb
+
+mol = loadpdb sa_prot.pdb
+solvatebox mol TIP3PBOX 10
+addIons2 mol Cl- 0
+savepdb mol dimer_solvated.pdb
+saveamberparm mol sa.prmtop sa.inpcrd
+quit

@@ -1,0 +1,16 @@
+#include "martini_v2.2.itp"
+#include "martini_v2.0_ions.itp"
+
+
+
+#include "Protein.itp"
+
+[ system ]
+; name
+Martini system from sa16_ensemble.pdb in water
+
+[ molecules ]
+; name        number
+Protein 	 5
+W           14088
+CL-              80

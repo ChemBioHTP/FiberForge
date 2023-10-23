@@ -1,0 +1,45 @@
+                  :-) GROMACS - gmx mdrun, 2020-UNCHECKED (-:
+
+                            GROMACS is written by:
+     Emile Apol      Rossen Apostolov      Paul Bauer     Herman J.C. Berendsen
+    Par Bjelkmar      Christian Blau   Viacheslav Bolnykh     Kevin Boyd    
+ Aldert van Buuren   Rudi van Drunen     Anton Feenstra       Alan Gray     
+  Gerrit Groenhof     Anca Hamuraru    Vincent Hindriksen  M. Eric Irrgang  
+  Aleksei Iupinov   Christoph Junghans     Joe Jordan     Dimitrios Karkoulis
+    Peter Kasson        Jiri Kraus      Carsten Kutzner      Per Larsson    
+  Justin A. Lemkul    Viveca Lindahl    Magnus Lundborg     Erik Marklund   
+    Pascal Merz     Pieter Meulenhoff    Teemu Murtola       Szilard Pall   
+    Sander Pronk      Roland Schulz      Michael Shirts    Alexey Shvetsov  
+   Alfons Sijbers     Peter Tieleman      Jon Vincent      Teemu Virolainen 
+ Christian Wennberg    Maarten Wolf      Artem Zhmurov   
+                           and the project leaders:
+        Mark Abraham, Berk Hess, Erik Lindahl, and David van der Spoel
+
+Copyright (c) 1991-2000, University of Groningen, The Netherlands.
+Copyright (c) 2001-2019, The GROMACS development team at
+Uppsala University, Stockholm University and
+the Royal Institute of Technology, Sweden.
+check out http://www.gromacs.org for more information.
+
+GROMACS is free software; you can redistribute it and/or modify it
+under the terms of the GNU Lesser General Public License
+as published by the Free Software Foundation; either version 2.1
+of the License, or (at your option) any later version.
+
+GROMACS:      gmx mdrun, version 2020-UNCHECKED
+Executable:   /accre/arch/easybuild/software/MPI/GCC/8.2.0/OpenMPI/3.1.4/GROMACS/2020/bin/gmx
+Data prefix:  /accre/arch/easybuild/software/MPI/GCC/8.2.0/OpenMPI/3.1.4/GROMACS/2020
+Working dir:  /panfs/accrepfs.vampire/home/nehilpkd/projects/biomatsims/cg_long/4_sys_eq
+Command line:
+  gmx mdrun -deffnm nvt -v
+
+Reading file nvt.tpr, VERSION 2020-UNCHECKED (single precision)
+Using 24 MPI threads
+
+Non-default thread affinity set, disabling internal thread affinity
+
+Using 1 OpenMP thread per tMPI thread
+
+starting mdrun 'Martini system from sa8.pdb in water'
+10000000 steps, 250000.0 ps.
+step 0imb F  5% step 100, will finish Sat Mar 16 06:02:27 2024imb F  8% step 200, will finish Fri Mar 15 11:30:20 2024imb F  7% step 300, will finish Fri Mar 15 03:34:44 2024imb F  3% step 400, will finish Fri Mar 15 00:54:02 2024imb F 10% step 500, will finish Thu Mar 14 20:10:13 2024imb F  9% step 600, will finish Thu Mar 14 20:10:15 2024imb F  8% step 700, will finish Thu Mar 14 20:48:47 2024imb F  5% step 800, will finish Thu Mar 14 20:37:07 2024slurmstepd: error: *** JOB 56082198 ON cn428 CANCELLED AT 2023-09-23T15:40:19 ***
