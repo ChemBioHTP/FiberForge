@@ -1,0 +1,2 @@
+here
+slurmstepd: error: *** JOB 59731885 ON gpu0002 CANCELLED AT 2024-01-21T12:45:02 ***
