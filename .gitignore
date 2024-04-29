@@ -4,6 +4,7 @@ workspace/
 *.trr
 mdcrd.nc
 mdcrd
+*.xtc
 .DS_Store
 *.netcdf
 

@@ -1,0 +1,61 @@
+;
+;	File 'topol.top' was generated
+;	By user: nehilpkd (892803)
+;	On host: gw346.vampire
+;	At date: Tue Feb 13 13:42:19 2024
+;
+;	This is a standalone topology file
+;
+;	Created by:
+;	                :-) GROMACS - gmx pdb2gmx, 2020-UNCHECKED (-:
+;	
+;	Executable:   /accre/arch/easybuild/software/MPI/GCC/8.2.0/OpenMPI/3.1.4/GROMACS/2020/bin/gmx
+;	Data prefix:  /accre/arch/easybuild/software/MPI/GCC/8.2.0/OpenMPI/3.1.4/GROMACS/2020
+;	Working dir:  /panfs/accrepfs.vampire/data/yang_lab/nehilpkd/biomatsims/smd/workspace/dd03d5ae615caf735105b01b56166598/0_preprocess
+;	Command line:
+;	  gmx pdb2gmx -f protofibril.pdb -o protofibril.gro -ff amber03 -water tip3p -ignh
+;	Force field was read from the standard GROMACS share directory.
+;
+
+; Include forcefield parameters
+#include "amber03.ff/forcefield.itp"
+
+; Include chain topologies
+#include "topol_Protein_chain_A.itp"
+#include "topol_Protein_chain_C.itp"
+#include "topol_Protein_chain_E.itp"
+#include "topol_Protein_chain_G.itp"
+#include "topol_Protein_chain_I.itp"
+#include "topol_Protein_chain_K.itp"
+#include "topol_Protein_chain_M.itp"
+#include "topol_Protein_chain_O.itp"
+
+; Include water topology
+#include "amber03.ff/tip3p.itp"
+
+#ifdef POSRES_WATER
+; Position restraint for each water oxygen
+[ position_restraints ]
+;  i funct       fcx        fcy        fcz
+   1    1       1000       1000       1000
+#endif
+
+; Include topology for ions
+#include "amber03.ff/ions.itp"
+
+[ system ]
+; Name
+Protein in water
+
+[ molecules ]
+; Compound        #mols
+Protein_chain_A     1
+Protein_chain_C     1
+Protein_chain_E     1
+Protein_chain_G     1
+Protein_chain_I     1
+Protein_chain_K     1
+Protein_chain_M     1
+Protein_chain_O     1
+SOL         38901
+CL               8

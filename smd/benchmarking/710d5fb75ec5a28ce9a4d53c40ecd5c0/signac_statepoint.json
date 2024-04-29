@@ -1,0 +1,1 @@
+{"pdbID": "6Y1A", "n_repeats": 1, "fiberverse_directory": "/data/yang_lab/nehilpkd/fibrilverse_rcsb", "type": "single", "pull_chains": [0, 1], "pull_constant": 1000, "pull_steps": 250000, "pull_rate": 0.01}
