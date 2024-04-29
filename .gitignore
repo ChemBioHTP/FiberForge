@@ -1,3 +1,5 @@
+# signac workspace
+workspace/
 # large simulation siles
 *.trr
 mdcrd.nc

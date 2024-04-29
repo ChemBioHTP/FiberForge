@@ -1,3 +1,0 @@
-At line 203 of file inpcrd_dat.F90 (unit = 9, file = '../2_/md_wat.rst')
-Fortran runtime error: End of file
-The End

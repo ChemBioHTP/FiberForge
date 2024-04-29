@@ -1,2 +1,0 @@
-Wall
-   ATOM PHO     PHO   12.0  N N
