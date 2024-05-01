@@ -1,8 +1,0 @@
-source leaprc.protein.ff14SB
-source leaprc.water.tip3p
-
-mol = loadpdb clean.pdb
-solvatebox mol TIP3PBOX 10
-savepdb mol system.pdb
-saveamberparm mol sys.prmtop sys.inpcrd
-quit
