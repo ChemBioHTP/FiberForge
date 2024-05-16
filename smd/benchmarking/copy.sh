@@ -1,3 +1,3 @@
-for dir in workspace/dd183d3ad408a9560f999a522d1e5e0f workspace/d73148d98882664d81b12c2f3017cc13 workspace/8def80476531ad9e9b8962076ea10397 workspace/22d321a5fd0a851c182e9383d7930446; do
+for dir in workspace/85e4c235e6537606ef24e8ee22dc000a workspace/b9ffb824ce7daf936517829e42ae305e workspace/d7e7ea2f78ed0d2a43427c614128c99d workspace/1bc8fa8ce6fda7d223fb05029b8e1a60; do
 cp -r ./710d5fb75ec5a28ce9a4d53c40ecd5c0/3_eq_npt ./710d5fb75ec5a28ce9a4d53c40ecd5c0/0_preprocess ./710d5fb75ec5a28ce9a4d53c40ecd5c0/1_min ./710d5fb75ec5a28ce9a4d53c40ecd5c0/2_eq_nvt ./710d5fb75ec5a28ce9a4d53c40ecd5c0/4_smd "$dir"
 done

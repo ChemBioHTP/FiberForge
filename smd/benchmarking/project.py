@@ -331,9 +331,9 @@ def ran_analysis(job):
 @Project.post.isfile('0_preprocess/solvated_ions.gro')
 @Project.operation
 def preprocess_pdb(job):
-    if job.isfile(f'0_preprocess/protofibril.gro'):
-        print(f"PDB file for {job.id} already preprocessed")
-        return
+    # if job.isfile(f'0_preprocess/protofibril.gro'):
+    #     print(f"PDB file for {job.id} already preprocessed")
+    #     return
 
     print(f"Preprocessing PDB file for {job.id}")
 

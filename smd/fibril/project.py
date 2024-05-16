@@ -12,6 +12,7 @@ import mdtraj
 from sklearn.decomposition import PCA
 import pymol2
 from Bio.PDB import PDBParser, PDBIO, Select
+from scipy.optimize import curve_fit
 from biomatsims.utils import *
 
 import warnings
@@ -161,6 +162,11 @@ def identify_growth_axis(sheet_centers):
 
     return growth_axis
 
+def get_growth_vector(sheet_centers):
+    pca = PCA(n_components=3)
+    pca.fit(sheet_centers)
+    return pca.components_[0]
+
 def calculate_n_residues(chain):
     n_residues = 0
     for residue in chain:
@@ -293,6 +299,43 @@ def calculate_var_over_time(xvg_file):
                 time_data.append(list(map(float, line.split())))
     return time_data
 
+def helix_equation(t, R, pitch, phase, axis_x, axis_y, axis_z):
+    """
+    Parametric equation for a helix.
+    
+    Parameters:
+        t (array-like): Parameter along the helix.
+        R (float): Radius of the helix.
+        pitch (float): Pitch of the helix.
+        phase (float): Phase offset.
+        axis_x, axis_y, axis_z (float): Direction vector components of the helix axis.
+    
+    Returns:
+        array-like: Coordinates of points on the helix at parameter t.
+    """
+    axis_dir = np.array([axis_x, axis_y, axis_z])
+    axis_dir /= np.linalg.norm(axis_dir)  # Normalize axis direction
+    x = R * np.cos(2 * np.pi * t / pitch + phase)
+    y = R * np.sin(2 * np.pi * t / pitch + phase)
+    z = t * np.dot(np.array([axis_x, axis_y, axis_z]), axis_dir)
+    return np.column_stack((x, y, z)).flatten()
+
+def fit_helix_to_data(data):
+    """
+    Fit a helical curve to the given data points.
+    
+    Parameters:
+        data (array-like): Array of beta sheet centers of mass.
+    
+    Returns:
+        tuple: Optimal parameters for the helix equation.
+    """
+    initial_guess = (1.0, 10.0, 0.0, 0.0, 0.0, 1.0) # Initial guess for fitting parameters (R, pitch, phase, axis_dir)
+    t = np.arange(len(data)) # Parameter along the helix
+    popt, pcov = curve_fit(helix_equation, t, data.flatten(), p0=initial_guess) # Fit the helix equation to the data
+    
+    return popt
+
 """
 Preprocess the PDB file
     1. Remove water, ions, and ligands
@@ -380,6 +423,8 @@ def preprocess_pdb(job):
             remove_chains(output_pdb, "protofibril.pdb", chains_to_remove)
         else:
             os.rename(output_pdb, "protofibril.pdb")
+
+        print("Finished identification of protofibrils")
         
         # Atomtype the protein
         os.system(f". ~/load_gromacs.sh; gmx pdb2gmx -f protofibril.pdb -o protofibril.gro -ff amber03 -water tip3p -ignh")
@@ -387,8 +432,15 @@ def preprocess_pdb(job):
         # Center fibril in box
         os.system(f". ~/load_gromacs.sh; gmx editconf -f protofibril.gro -o centered.gro -c")
 
+        align_fibril = False #TODO  # Align fibril along the z-axis
+        if align_fibril:
+            # Align fibril along the z-axis, assuming longest axis is the growth axis
+            os.system(f". ~/load_gromacs.sh; gmx editconf -f centered.gro -o aligned.gro -princ 1 <<EOF\n1\nEOF")
+        else:
+            os.system(f"cp centered.gro aligned.gro")
+
         # Estimate bounding box needed for simulation
-        min_coords, max_coords = find_bounding_box("centered.gro")
+        min_coords, max_coords = find_bounding_box("aligned.gro")
         job.doc['min_coords'] = min_coords
         job.doc['max_coords'] = max_coords
 
@@ -416,7 +468,7 @@ def preprocess_pdb(job):
         new_center[box != pulling_length] = box[box != pulling_length] / 2
 
         # Expand the box to the box size
-        os.system(f". ~/load_gromacs.sh; gmx editconf -f centered.gro -o expanded.gro -box {box[0]} {box[1]} {box[2]} -center {new_center[0]} {new_center[1]} {new_center[2]}")
+        os.system(f". ~/load_gromacs.sh; gmx editconf -f aligned.gro -o expanded.gro -box {box[0]} {box[1]} {box[2]} -center {new_center[0]} {new_center[1]} {new_center[2]}")
 
         # Solvate the protein
         os.system(f". ~/load_gromacs.sh; gmx solvate -cp expanded.gro -cs spc216.gro -p topol.top -o solvated.gro")
@@ -445,9 +497,9 @@ def preprocess_pull(job):
     n_residues = calculate_n_residues(chain)
     chain_b = list(range(n_chains))[job.sp.pull_chains[1]] + 1 # 1-indexed chain number 
     
-    # Remove positional restraints for all chains except the second chain
+    # Remove positional restraints for all chains restraint chain
     for chain in job.doc['protofibrils'][0].keys():
-        if chain != list(job.doc['protofibrils'][0].keys())[1]:
+        if chain != list(job.doc['protofibrils'][0].keys())[job.sp.pull_chains[1]]:
             os.system(f"sed -i '/; Include Position restraint file/,/#endif/d' ../0_preprocess/topol_Protein_chain_{chain}.itp")
 
     # Make index file
@@ -459,7 +511,7 @@ def preprocess_pull(job):
         for line in f:
             if "[" in line:
                 n_groups += 1
-    os.system(f". ~/load_gromacs.sh; gmx make_ndx -f ../3_eq_npt/npt.gro -o index.ndx<<EOF\nri 1-{n_residues}\nname {n_groups} Chain_A\nri {n_residues*(chain_b - 1)}-{n_residues * chain_b}\nname {n_groups+1} Chain_B\nq\nEOF")
+    os.system(f". ~/load_gromacs.sh; gmx make_ndx -f ../3_eq_npt/npt.gro -o index.ndx<<EOF\nri 1-{n_residues}\nname {n_groups} Chain_A\nri {n_residues*(chain_b - 1)+1}-{n_residues * chain_b}\nname {n_groups+1} Chain_B\nq\nEOF")
 
     # Create the pull code
     os.system(". ~/load_gromacs.sh; gmx grompp -f pull.mdp -c ../3_eq_npt/npt.gro -p ../0_preprocess/topol.top -r ../3_eq_npt/npt.gro -n index.ndx -t ../3_eq_npt/npt.cpt -o pull.tpr")
@@ -469,6 +521,32 @@ def preprocess_pull(job):
 @Project.post.isfile('4_smd/pull.mdp')
 @Project.operation
 def create_pull_mdp(job):
+
+    # find atom that is closest to the center of mass of the pull group and use that as the reference atom
+    chain_a_name = list(job.doc['protofibrils'][0].keys())[job.sp.pull_chains[0]]
+    chain_b_name = list(job.doc['protofibrils'][0].keys())[job.sp.pull_chains[1]]
+    chain_a = extract_chain(job.fn('0_preprocess/protofibril.pdb'), chain_a_name)
+    chain_b = extract_chain(job.fn('0_preprocess/protofibril.pdb'), chain_b_name)
+    chain_a_com = job.doc['protofibrils'][0][chain_a_name]
+    chain_b_com = job.doc['protofibrils'][0][chain_b_name]
+    # find closest atom to COM
+    def find_closest_atom(com, chain):
+        min_dist = np.inf
+        index = 1
+        count = 1
+        for res in chain:
+            for atom in res:
+                dist = np.linalg.norm(atom.get_coord() - com)
+                if dist < min_dist:
+                    min_dist = dist
+                    index = count
+                count += 1
+        return index
+    ref_atom_a_index = find_closest_atom(chain_a_com, chain_a)
+    ref_atom_b_index = find_closest_atom(chain_b_com, chain_b)
+    n_atom_per_chain = sum(1 for atom in chain_a.get_atoms())
+    assert sum(1 for atom in chain_a.get_atoms()) == sum(1 for atom in chain_b.get_atoms()) # make sure they are the same number of atoms
+
     lines = f"""title       = Umbrella pulling simulation 
     define      = -DPOSRES
     ; Run parameters
@@ -527,9 +605,12 @@ def create_pull_mdp(job):
     pull_ngroups            = 2         ; two groups defining one reaction coordinate 
     pull_group1_name        = Chain_A 
     pull_group2_name        = Chain_B 
+    pull-pbc-ref-prev-step-com = yes    ; use the reference group from the previous step since we are pulling a big group
+    pull-group1-pbcatom     = {ref_atom_a_index + n_atom_per_chain * (job.sp.pull_chains[0])}
+    pull-group2-pbcatom     = {ref_atom_b_index + n_atom_per_chain * (list(range(len(job.doc['protofibrils'][0])))[job.sp.pull_chains[1]])}
     pull_coord1_type        = umbrella  ; harmonic potential
     pull_coord1_geometry    = distance  ; simple distance increase 
-    pull_coord1_dim         = N N Y
+    pull_coord1_dim         = Y Y Y  ; calculate the distance between the centers of mass in all three dimensions
     pull_coord1_groups      = 1 2
     pull_coord1_start       = yes       ; define initial COM distance > 0
     pull_coord1_rate        = {job.sp.pull_rate}      ;  nm per ps

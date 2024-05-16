@@ -403,15 +403,20 @@ pdbs = [
     '8SBD',
 ]
 
-statepoint = {
-    "n_repeats": 1, 
+pdbs = ['2MXU', '6GK3'] # for testing
+
+statepoint = { 
     "fiberverse_directory": "/data/yang_lab/nehilpkd/fibrilverse_rcsb", 
     "type": "single", 
-    "pull_chains": [0, -1], 
+    "pull_chains": [0, 1], 
     "pull_constant": 1000, 
     "pull_steps": 250000, 
-    "pull_rate": 0.01
+    "pull_rate": 0.01,
+    "protofibril_distance_threshold": 20.0
 }
+
+n_replicates = 1
+
 statepoints = []
 for pdb in pdbs:
     statepoint["pdbID"] = pdb
@@ -427,9 +432,12 @@ if __name__ == "__main__":
             sp["pull_constant"] = 1000
         if "pull_steps" not in sp:
             sp["pull_steps"] = 250000
-
+    
     for sp in statepoints:
-        if not project.find_jobs(sp):
-            print("Initializing job", sp)
-            project.open_job(sp).init()
+        for i in range(n_replicates):
+            sp['replicate'] = i
+            if not project.find_jobs(sp):
+                print(f"Initializing job {project.open_job(sp).id}\nwith statepoint {sp}")
+                project.open_job(sp).init()
+                
         
