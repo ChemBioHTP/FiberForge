@@ -25,9 +25,22 @@ predicted_fibril = build_fibril(chain, average_rotation, average_translation, n_
 ## High-throughput simulation 
 Alter the fiberverse database location for your machine in`init.py`, create the list of pdb_ids you want to simulate, specify n_replicates, specify pulling conditions, specify the chains you wish to pull. 
 
-After you have initialize your jobs with `python init.py` perform the following operations to run simulations on your system
+After you have initialized your jobs with `python init.py` perform the following operations to run simulations on your system
 ```bash
-python project.py run
+python project.py run -o preprocess_pdb
+python project.py run -o create_eq_submission
+python project.py run -o run_equilibration
+```
+After minimization and equilibration have finished run:
+```bash
+python project.py run -o create_pull_mdp
+python project.py run -o create_pull_submission
+python project.py run -o preprocess_pull
+python project.py run -o run_pull
+```
+Finally, after the pulling simulation has finished run:
+```bash
+python project.py run -o run_analysis
 ```
 
 ## Post-simulation analysis
