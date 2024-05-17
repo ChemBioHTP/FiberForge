@@ -5,14 +5,46 @@ BioMatSims
 [![codecov](https://codecov.io/gh/REPLACE_WITH_OWNER_ACCOUNT/BioMatSims/branch/main/graph/badge.svg)](https://codecov.io/gh/REPLACE_WITH_OWNER_ACCOUNT/BioMatSims/branch/main)
 
 
-A repo for simulating biomaterial self assembly
+
+# Example usage
+
+## Fibril analysis and extension
+```python
+from biomatsims.geometry_analysis import calculate_average_rotation_translation
+from biomatsims.build import build_fibril
+import mbuild
+
+pdb_file = 'some_fibril.pdb'
+average_rotation, average_translation = calculate_average_rotation_translation(pdb_file)
+
+mol = mbuild.load(pdb_file)
+chain = mol.children[0] # assuming the first child is the chain of interest
+predicted_fibril = build_fibril(chain, average_rotation, average_translation, n_chains=40)
+```
+
+## Fibril analysis and extension
+```python
+from biomatsims.geometry_analysis import calculate_average_rotation_translation
+from biomatsims.build import build_fibril
+import mbuild
+
+pdb_file = 'some_fibril.pdb'
+average_rotation, average_translation = calculate_average_rotation_translation(pdb_file)
+
+mol = mbuild.load(pdb_file)
+chain = mol.children[0] # assuming the first child is the chain of interest
+predicted_fibril = build_fibril(chain, average_rotation, average_translation, n_chains=40)
+```
+
+
+A repo for building, characterizing, and analyizing protein fibrils.
 
 ### Copyright
 
-Copyright (c) 2023, Kieran Nehil-Puleo
+Copyright (c) 2024, Kieran Nehil-Puleo
 
 
 #### Acknowledgements
- 
-Project based on the 
-[Computational Molecular Science Python Cookiecutter](https://github.com/molssi/cookiecutter-cms) version 1.1.
+##### NSF GRFP
+##### Yang Lab, Vanderbilt University
+##### Cummings Lab, Vanderbilt University
