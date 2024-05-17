@@ -1,5 +1,6 @@
 import Bio
 import Bio.SeqUtils
+from Bio.PDB import PDBParser, PDBIO, Select
 
 def single_to_triple(seq):
 	seq = [Bio.SeqUtils.IUPACData.protein_letters_1to3[aa] for aa in seq]
