@@ -299,42 +299,6 @@ def calculate_var_over_time(xvg_file):
                 time_data.append(list(map(float, line.split())))
     return time_data
 
-def helix_equation(t, R, pitch, phase, axis_x, axis_y, axis_z):
-    """
-    Parametric equation for a helix.
-    
-    Parameters:
-        t (array-like): Parameter along the helix.
-        R (float): Radius of the helix.
-        pitch (float): Pitch of the helix.
-        phase (float): Phase offset.
-        axis_x, axis_y, axis_z (float): Direction vector components of the helix axis.
-    
-    Returns:
-        array-like: Coordinates of points on the helix at parameter t.
-    """
-    axis_dir = np.array([axis_x, axis_y, axis_z])
-    axis_dir /= np.linalg.norm(axis_dir)  # Normalize axis direction
-    x = R * np.cos(2 * np.pi * t / pitch + phase)
-    y = R * np.sin(2 * np.pi * t / pitch + phase)
-    z = t * np.dot(np.array([axis_x, axis_y, axis_z]), axis_dir)
-    return np.column_stack((x, y, z)).flatten()
-
-def fit_helix_to_data(data):
-    """
-    Fit a helical curve to the given data points.
-    
-    Parameters:
-        data (array-like): Array of beta sheet centers of mass.
-    
-    Returns:
-        tuple: Optimal parameters for the helix equation.
-    """
-    initial_guess = (1.0, 10.0, 0.0, 0.0, 0.0, 1.0) # Initial guess for fitting parameters (R, pitch, phase, axis_dir)
-    t = np.arange(len(data)) # Parameter along the helix
-    popt, pcov = curve_fit(helix_equation, t, data.flatten(), p0=initial_guess) # Fit the helix equation to the data
-    
-    return popt
 
 """
 Preprocess the PDB file
