@@ -22,6 +22,30 @@ chain = mol.children[0] # assuming the first child is the chain of interest
 predicted_fibril = build_fibril(chain, average_rotation, average_translation, n_chains=40)
 ```
 
+## Mutate your fibril
+```python
+from enzy_htp.structure import PDBParser
+from enzy_htp.mutation import assign_mutant, mutate_stru
+from enzy_htp.mutation.api import sync_mutation_over_chains
+
+n_mutants = 1
+pdb_file = "your_fibril.pdb"
+parser = PDBParser()
+
+for m in range(n_mutants):
+    structure = parser.get_structure(pdb_file)
+    mutations = assign_mutant(
+        structure,
+        pattern="r:1[chain A:all]*1R", # this just performs random mutations across the chain
+        chain_sync_list=[tuple(structure.chain_names)], # sync mutations across entire fibril
+    )
+    mutated_structure = mutate_stru(structure, mutations[0])
+    parser.save_structure(
+        stru=mutated_structure, 
+        outfile=f"{pdb_file.split('.')[0]}_mutant_{m}.pdb"
+    )
+```
+
 ## High-throughput simulation 
 Alter the fiberverse database location for your machine in`init.py`, create the list of pdb_ids you want to simulate, specify n_replicates, specify pulling conditions, specify the chains you wish to pull. 
 
