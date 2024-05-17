@@ -1,5 +1,0 @@
-source leaprc.protein.ff14SB
-source leaprc.interface_v1_5
-com = loadpdb mfp_silica_amber.pdb
-saveamberparm com mfp_silica.prmtop mfp_silica.inpcrd
-quit
