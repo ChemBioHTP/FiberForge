@@ -7,7 +7,7 @@ import numpy as np
 from flow import FlowProject
 from flow.environment import DefaultSlurmEnvironment
 
-from biomatsims.characterization import calculate_var_over_time
+from biomatsims.characterization import calculate_variable_over_time
 from biomatsims.geometry_analysis import identify_protofibrils, identify_growth_axis, calculate_cross_sectional_area
 from biomatsims.utils import (
     rename_amino_acid, 
@@ -607,13 +607,13 @@ def run_analysis(job):
         job.doc['cross_sectional_area'] = cross_sectional_area
 
         # Calculate the strain in units of nm
-        time_length = calculate_var_over_time(job.path + '/4_smd/pull_pullx.xvg')
+        time_length = calculate_variable_over_time(job.path + '/4_smd/pull_pullx.xvg')
         length_over_time = np.array([l for (t, l) in time_length])
         strain = (length_over_time - length_over_time[0]) / length_over_time[0]
         job.doc['strain'] = strain # nm/nm of pull distance
 
         # Calculate the stress
-        time_force = calculate_var_over_time(job.path + '/4_smd/pull_pullf.xvg')
+        time_force = calculate_variable_over_time(job.path + '/4_smd/pull_pullf.xvg')
         force_over_time = np.array([f for (t, f) in time_force]) * (1e-9) * (1/1000) # kJ/mol/nm to N
         stress = force_over_time / cross_sectional_area
         job.doc['stress'] = stress

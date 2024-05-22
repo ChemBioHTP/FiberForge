@@ -133,6 +133,7 @@ def visualize_residuals(pdb_file, chain1_id, chain2_id, rotation, translation):
     - rotation (np.array): Rotation matrix.
     - translation (np.array): Translation vector.
     """
+    import random
     parser = PDBParser()
     structure = parser.get_structure("protein", pdb_file)
     

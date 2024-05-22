@@ -2,6 +2,7 @@ from Bio.PDB import PDBParser
 from scipy.optimize import minimize
 import numpy as np
 from sklearn.decomposition import PCA
+import mdtraj
 
 
 def calculate_cross_sectional_area(fibril_axis, pdb_file, probe_size=0.6, n_cross_sections=10):
