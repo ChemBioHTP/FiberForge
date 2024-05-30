@@ -1,7 +1,7 @@
 from Bio.PDB import *
 import numpy as np
 from plotly import graph_objects as go
-from biomatsims.geometry_analysis import estimate_rotation_translation_between_chains
+from fiberForge.geometry_analysis import estimate_rotation_translation_between_chains
 
 
 def visualize_rotation_translation(pdb_file, chain1_id, chain2_id):
