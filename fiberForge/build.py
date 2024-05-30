@@ -2,6 +2,7 @@ from Bio.PDB import *
 import numpy as np
 from plotly import graph_objects as go
 from fiberForge.geometry_analysis import estimate_rotation_translation_between_chains
+from scipy.optimize import minimize
 
 
 def visualize_rotation_translation(pdb_file, chain1_id, chain2_id):
@@ -204,32 +205,57 @@ def calculate_average_rotation_translation(pdb_file):
     """
     parser = PDBParser()
     structure = parser.get_structure("protein", pdb_file)
-    
-    total_rotation = np.zeros((3, 3))
-    total_translation = np.zeros(3)
-    num_pairs = 0
+
+    chains_coords = []
     
     # Iterate over each subsequent chain pair
     for model in structure:
         chains = list(model)
         for i in range(len(chains) - 1):
             chain1_id = chains[i].id
-            chain2_id = chains[i + 1].id
-            rotation, translation = estimate_rotation_translation_between_chains(pdb_file, chain1_id, chain2_id)
-            total_rotation += rotation
-            total_translation += translation
-            num_pairs += 1
+            chain2_id = chains[i + 1].id     
+            # Extract coordinates of atoms from the two specified chains
+            coords_chain1 = []
+            coords_chain2 = []
+            for model in structure: #TODO this is assuming the order of the chainID is the same as the order of the chains in the structure
+                for chain in model:
+                    if chain.id == chain1_id:
+                        for residue in chain:
+                            for atom in residue:
+                                coords_chain1.append(atom.get_coord())
+                    elif chain.id == chain2_id:
+                        for residue in chain:
+                            for atom in residue:
+                                coords_chain2.append(atom.get_coord())
+            
+            coords_chain1 = np.array(coords_chain1)
+            coords_chain2 = np.array(coords_chain2)
+
+            chains_coords.append([coords_chain1, coords_chain2])
+
+    # Define the function to minimize (sum of squared distances)
+    def objective(params):
+        rotation_matrix = np.reshape(params[:9], (3, 3))
+        translation = params[9:]
+        total_rmsd = 0.0
+        for (coords_chain1, coords_chain2) in chains_coords:
+            transformed_coords_chain1 = np.dot(coords_chain1, rotation_matrix.T) + translation
+            total_rmsd += np.sum((coords_chain2 - transformed_coords_chain1) ** 2) # Sum of squared distances
+        return total_rmsd
+    # Initial guess for rotation matrix (identity matrix) and translation vector (zero vector)
+    initial_guess = np.zeros(12)
+    initial_guess[:9] = np.eye(3).flatten()
+    result = minimize(objective, initial_guess, method='BFGS') # Minimize the objective function to estimate rotation and translation
+    # Extract rotation and translation from the result
+    rotation_matrix = np.reshape(result.x[:9], (3, 3))
+    translation = result.x[9:]
     
-    # Calculate average rotation and translation
-    average_rotation = total_rotation / num_pairs
-    average_translation = total_translation / num_pairs
-    
-    return average_rotation, average_translation
+    return rotation_matrix, translation
 
 
 def build_fibril(chain, rotation, translation, n_units):
     import mbuild as mb
-    predicted_fibril = mb.Compound
+    predicted_fibril = mb.Compound()
     for i in range(n_units):
         chain_copy = mb.clone(chain)
         rotation_matrix = np.linalg.matrix_power(rotation, i)

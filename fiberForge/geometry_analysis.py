@@ -78,7 +78,7 @@ def estimate_rotation_translation_between_chains(pdb_file, chain1_id, chain2_id)
     initial_guess[:9] = np.eye(3).flatten()
     
     # Minimize the objective function to estimate rotation and translation
-    result = minimize(objective, initial_guess, method='BFGS')
+    result = minimize(objective, initial_guess, method='BFGS', tol=1e-6)
     
     # Extract rotation and translation from the result
     rotation_matrix = np.reshape(result.x[:9], (3, 3))
