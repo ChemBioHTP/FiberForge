@@ -1,4 +1,4 @@
-from Bio.PDB import *
+from Bio.PDB import PDBParser
 import numpy as np
 from plotly import graph_objects as go
 from fiberForge.geometry_analysis import estimate_rotation_translation_between_chains

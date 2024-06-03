@@ -7,8 +7,8 @@ import numpy as np
 from flow import FlowProject
 from flow.environment import DefaultSlurmEnvironment
 
-from fiberForge.characterization import calculate_variable_over_time
-from fiberForge.geometry_analysis import identify_protofibrils, identify_growth_axis, calculate_cross_sectional_area
+from fiberForge.characterization import calculate_variable_over_time, estimate_elastic_modulus
+from fiberForge.geometry_analysis import identify_protofibrils, identify_growth_axis, calculate_cross_sectional_area, estimate_rotation_translation_between_chains
 from fiberForge.utils import (
     rename_amino_acid, 
     renumber_residues, 
@@ -58,6 +58,7 @@ def ran_analysis(job):
 ### Operations
 ######################
 @Project.post.isfile('0_preprocess/solvated_ions.gro')
+@Project.post.isfile('0_preprocess/protofibril.gro')
 @Project.operation
 def preprocess_pdb(job):
     """
@@ -119,111 +120,103 @@ def preprocess_pdb(job):
     Exception Handling:
     - Any errors encountered during preprocessing will be caught, and a failure message will be printed.
     """
-    try:
-        if job.isfile(f'0_preprocess/protofibril.gro'):
-            print(f"PDB file for {job.id} already preprocessed")
-            return
 
-        print(f"Preprocessing PDB file for {job.id}")
+    print(f"Preprocessing PDB file for {job.id}")
 
-        if not os.path.exists(job.path + '/0_preprocess'):
-            os.mkdir(job.path + '/0_preprocess')
-        shutil.copy(job.path + "/../../in_files/ions.mdp", job.path + '/0_preprocess')
-        os.chdir(job.path + '/0_preprocess')
+    if not os.path.exists(job.path + '/0_preprocess'):
+        os.mkdir(job.path + '/0_preprocess')
+    shutil.copy(job.path + "/../../in_files/ions.mdp", job.path + '/0_preprocess')
+    os.chdir(job.path + '/0_preprocess')
 
-        # Validity checks for the PDB file
-        if discontinuous_residue_position(f"{job.sp.fiberverse_directory}/{job.sp.pdbID}.pdb"):
-            print(f"Discontinuous residue position detected in {job.sp.pdbID}.pdb")
-            return
-
-        # Preprocess the PDB file
-        input_pdb = f"{job.sp.fiberverse_directory}/{job.sp.pdbID}.pdb"
-        renamed_pdb = f"{job.sp.pdbID}_renamed.pdb"
-        renumbered_pdb = f"{job.sp.pdbID}_renumbered.pdb"
-        cleaned_pdb = f"{job.sp.pdbID}_cleaned.pdb"
-        output_pdb = f"{job.sp.pdbID}_processed.pdb"
-        rename_amino_acid(input_pdb, renamed_pdb)
-        renumber_residues(renamed_pdb, renumbered_pdb)
-        remove_ligands_water_ions(renumbered_pdb, cleaned_pdb)
-        add_hydrogens(cleaned_pdb, output_pdb)
-
-
-        # Unbundle fibril
-        if job.sp.type == "single":
-            protofibrils = identify_protofibrils(output_pdb, distance_threshold=job.sp.protofibril_distance_threshold)
-        elif job.sp.type == "solenoid":
-            protofibrils = identify_protofibrils(output_pdb, distance_threshold=30.0)
-        else:
-            print(f"{job.sp.type} fibril type not supported yet")
-            return
-
-        # save single protofibril
-        job.doc['protofibrils'] = protofibrils
-
-        if len(protofibrils) > 1:
-            chains_to_remove = []
-            for i in range(1, len(protofibrils)):
-                chains_to_remove.extend([chain_id for chain_id in protofibrils[i].keys()])
-            remove_chains(output_pdb, "protofibril.pdb", chains_to_remove)
-        else:
-            os.rename(output_pdb, "protofibril.pdb")
-
-        print("Finished identification of protofibrils")
-        
-        # Atomtype the protein
-        os.system(f". ~/load_gromacs.sh; gmx pdb2gmx -f protofibril.pdb -o protofibril.gro -ff amber03 -water tip3p -ignh")
-
-        # Center fibril in box
-        os.system(f". ~/load_gromacs.sh; gmx editconf -f protofibril.gro -o centered.gro -c")
-
-        align_fibril = False #TODO  # Align fibril along the z-axis
-        if align_fibril:
-            # Align fibril along the z-axis, assuming longest axis is the growth axis
-            os.system(f". ~/load_gromacs.sh; gmx editconf -f centered.gro -o aligned.gro -princ 1 <<EOF\n1\nEOF")
-        else:
-            os.system(f"cp centered.gro aligned.gro")
-
-        # Estimate bounding box needed for simulation
-        min_coords, max_coords = find_bounding_box("aligned.gro")
-        job.doc['min_coords'] = min_coords
-        job.doc['max_coords'] = max_coords
-
-        # Estimate fibril growth axis
-        sheet_centers = list(protofibrils[0].values())
-        growth_axis = identify_growth_axis(sheet_centers)
-        job.doc['growth_axis'] = growth_axis
-
-        # Calculate fibril dimensions
-        fiber_container = (np.array(max_coords) - np.array(min_coords))
-
-        # Create the pulling length, for now 5 times the length of the protofibril
-        pulling_length = 5 * fiber_container[growth_axis]
-        job.doc['pulling_length'] = pulling_length
-
-        # Define the box size as the pulling length in the growth axis and 2 times the other dimensions in the other axes
-        box = deepcopy(fiber_container)
-        box[growth_axis] = pulling_length
-        box[box != pulling_length] = 2 * box[box != pulling_length]
-        job.doc['box_size'] = box
-
-        # Find new center for fibril
-        new_center = deepcopy(box)
-        new_center[growth_axis] = new_center[growth_axis] / 5
-        new_center[box != pulling_length] = box[box != pulling_length] / 2
-
-        # Expand the box to the box size
-        os.system(f". ~/load_gromacs.sh; gmx editconf -f aligned.gro -o expanded.gro -box {box[0]} {box[1]} {box[2]} -center {new_center[0]} {new_center[1]} {new_center[2]}")
-
-        # Solvate the protein
-        os.system(f". ~/load_gromacs.sh; gmx solvate -cp expanded.gro -cs spc216.gro -p topol.top -o solvated.gro")
-
-        # Add ions
-        os.system(f". ~/load_gromacs.sh; gmx grompp -f ions.mdp -c solvated.gro -p topol.top -o ions.tpr")
-        os.system(f". ~/load_gromacs.sh; echo SOL | gmx genion -s ions.tpr -o solvated_ions.gro -p topol.top -pname NA -nname CL -neutral")
-
-    except:
-        print(f"Preprocessing failed for {job.id}")
+    # Validity checks for the PDB file
+    if discontinuous_residue_position(f"{job.sp.fiberverse_directory}/{job.sp.pdbID}.pdb"):
+        print(f"Discontinuous residue position detected in {job.sp.pdbID}.pdb")
         return
+
+    # Preprocess the PDB file
+    input_pdb = f"{job.sp.fiberverse_directory}/{job.sp.pdbID}.pdb"
+    renamed_pdb = f"{job.sp.pdbID}_renamed.pdb"
+    renumbered_pdb = f"{job.sp.pdbID}_renumbered.pdb"
+    cleaned_pdb = f"{job.sp.pdbID}_cleaned.pdb"
+    output_pdb = f"{job.sp.pdbID}_processed.pdb"
+    rename_amino_acid(input_pdb, renamed_pdb)
+    renumber_residues(renamed_pdb, renumbered_pdb)
+    remove_ligands_water_ions(renumbered_pdb, cleaned_pdb)
+    add_hydrogens(cleaned_pdb, output_pdb)
+
+
+    # Unbundle fibril
+    if job.sp.type == "single":
+        protofibrils = identify_protofibrils(output_pdb, distance_threshold=job.sp.protofibril_distance_threshold)
+    elif job.sp.type == "solenoid":
+        protofibrils = identify_protofibrils(output_pdb, distance_threshold=30.0)
+    else:
+        print(f"{job.sp.type} fibril type not supported yet")
+        return
+
+    # save single protofibril
+    job.doc['protofibrils'] = protofibrils
+
+    if len(protofibrils) > 1:
+        chains_to_remove = []
+        for i in range(1, len(protofibrils)):
+            chains_to_remove.extend([chain_id for chain_id in protofibrils[i].keys()])
+        remove_chains(output_pdb, "protofibril.pdb", chains_to_remove)
+    else:
+        os.rename(output_pdb, "protofibril.pdb")
+
+    print("Finished identification of protofibrils")
+    
+    # Atomtype the protein
+    os.system(f". ~/load_gromacs.sh; gmx pdb2gmx -f protofibril.pdb -o protofibril.gro -ff amber03 -water tip3p -ignh")
+
+    # Center fibril in box
+    os.system(f". ~/load_gromacs.sh; gmx editconf -f protofibril.gro -o centered.gro -c")
+
+    align_fibril = False #TODO  # Align fibril along the z-axis
+    if align_fibril:
+        # Align fibril along the z-axis, assuming longest axis is the growth axis
+        os.system(f". ~/load_gromacs.sh; gmx editconf -f centered.gro -o aligned.gro -princ 1 <<EOF\n1\nEOF")
+    else:
+        os.system(f"cp centered.gro aligned.gro")
+
+    # Estimate bounding box needed for simulation
+    min_coords, max_coords = find_bounding_box("aligned.gro")
+    job.doc['min_coords'] = min_coords
+    job.doc['max_coords'] = max_coords
+
+    # Estimate fibril growth axis
+    sheet_centers = list(protofibrils[0].values())
+    growth_axis = identify_growth_axis(sheet_centers)
+    job.doc['growth_axis'] = growth_axis
+
+    # Calculate fibril dimensions
+    fiber_container = (np.array(max_coords) - np.array(min_coords))
+
+    # Create the pulling length, for now 5 times the length of the protofibril
+    pulling_length = 5 * fiber_container[growth_axis]
+    job.doc['pulling_length'] = pulling_length
+
+    # Define the box size as the pulling length in the growth axis and 2 times the other dimensions in the other axes
+    box = deepcopy(fiber_container)
+    box[growth_axis] = pulling_length
+    box[box != pulling_length] = 2 * box[box != pulling_length]
+    job.doc['box_size'] = box
+
+    # Find new center for fibril
+    new_center = deepcopy(box)
+    new_center[growth_axis] = new_center[growth_axis] / 5
+    new_center[box != pulling_length] = box[box != pulling_length] / 2
+
+    # Expand the box to the box size
+    os.system(f". ~/load_gromacs.sh; gmx editconf -f aligned.gro -o expanded.gro -box {box[0]} {box[1]} {box[2]} -center {new_center[0]} {new_center[1]} {new_center[2]}")
+
+    # Solvate the protein
+    os.system(f". ~/load_gromacs.sh; gmx solvate -cp expanded.gro -cs spc216.gro -p topol.top -o solvated.gro")
+
+    # Add ions
+    os.system(f". ~/load_gromacs.sh; gmx grompp -f ions.mdp -c solvated.gro -p topol.top -o ions.tpr")
+    os.system(f". ~/load_gromacs.sh; echo SOL | gmx genion -s ions.tpr -o solvated_ions.gro -p topol.top -pname NA -nname CL -neutral")
 
 @Project.pre.isfile('0_preprocess/solvated_ions.gro')
 @Project.post.isfile('run_equilibration.sh')
@@ -307,7 +300,7 @@ def create_eq_submission(job):
             f.write(line + '\n')
 
 @Project.pre.isfile('0_preprocess/solvated_ions.gro')
-@Project.post.isfile('3_eq_npt/npt.gro')
+@Project.post.isfile('3_eq_npt/npt.log')
 @Project.operation(cmd=True)
 def run_equilibration(job):
     job.open()
@@ -318,41 +311,15 @@ def run_equilibration(job):
 @Project.post.isfile('4_smd/pull.mdp')
 @Project.operation
 def create_pull_mdp(job):
-    """
-    Create a GROMACS pull MDP file for umbrella sampling of a pulling simulation.
-
-    This function performs the following tasks:
-    1. Determine the reference atoms for the pulling groups.
-    2. Generate the pull MDP file with appropriate parameters for umbrella sampling.
-
-    Steps:
-    1. **Determine reference atoms**:
-        - Extracts chains A and B from the protofibril PDB file.
-        - Calculates the center of mass (COM) for each chain.
-        - Finds the closest atom to the COM for each chain, which will serve as the reference atom.
-
-    2. **Generate pull MDP file**:
-        - Constructs the pull MDP file with the following parameters:
-            - Title and basic run parameters.
-            - Output frequency and file settings.
-            - Bond parameters and cutoff scheme.
-            - PME electrostatics parameters.
-            - Temperature and pressure coupling settings.
-            - Pulling parameters for umbrella sampling:
-                - Defines two groups (Chain A and Chain B) for pulling.
-                - Specifies the reference atoms and geometry for pulling.
-                - Sets the pulling rate and force constant.
-
-    Exception Handling:
-    - The function does not include explicit exception handling as it assumes necessary input files are present and calculations are valid.
-    """
     # find atom that is closest to the center of mass of the pull group and use that as the reference atom
-    chain_a_name = list(job.doc['protofibrils'][0].keys())[job.sp.pull_chains[0]]
-    chain_b_name = list(job.doc['protofibrils'][0].keys())[job.sp.pull_chains[1]]
-    chain_a = extract_chain(job.fn('0_preprocess/protofibril.pdb'), chain_a_name)
-    chain_b = extract_chain(job.fn('0_preprocess/protofibril.pdb'), chain_b_name)
-    chain_a_com = job.doc['protofibrils'][0][chain_a_name]
-    chain_b_com = job.doc['protofibrils'][0][chain_b_name]
+    closest_chain_name = round(len(job.doc['protofibrils'][0].keys()) * job.sp.pull_chain)
+    pull_chain_name = list(job.doc['protofibrils'][0].keys())[closest_chain_name]
+    pull_chain = extract_chain(job.fn('0_preprocess/protofibril.pdb'), pull_chain_name)
+    pull_chain_com = job.doc['protofibrils'][0][pull_chain_name]
+    
+    # find restaint chain
+    restrain_chain_name = list(job.doc['protofibrils'][0].keys())[job.sp.restrain_chain]
+
     # find closest atom to COM
     def find_closest_atom(com, chain):
         min_dist = np.inf
@@ -366,10 +333,18 @@ def create_pull_mdp(job):
                     index = count
                 count += 1
         return index
-    ref_atom_a_index = find_closest_atom(chain_a_com, chain_a)
-    ref_atom_b_index = find_closest_atom(chain_b_com, chain_b)
-    n_atom_per_chain = sum(1 for atom in chain_a.get_atoms())
-    assert sum(1 for atom in chain_a.get_atoms()) == sum(1 for atom in chain_b.get_atoms()) # make sure they are the same number of atoms
+    ref_atom_index = find_closest_atom(pull_chain_com, pull_chain)
+    n_atom_per_chain = sum(1 for atom in pull_chain.get_atoms())
+    assert sum(1 for atom in pull_chain.get_atoms()) == sum(1 for atom in pull_chain.get_atoms()) # make sure they are the same number of atoms
+
+    # find the fibril axis
+    R, t = estimate_rotation_translation_between_chains(
+        job.fn('0_preprocess/protofibril.pdb'),
+        pull_chain_name,
+        restrain_chain_name
+        
+    )
+    perpendicular_vector_str = f"{t[0]} {t[1]} {t[2]}"
 
     lines = f"""title       = Umbrella pulling simulation 
     define      = -DPOSRES
@@ -426,16 +401,14 @@ def create_pull_mdp(job):
     ; Pull code
     pull                    = yes
     pull_ncoords            = 1         ; only one reaction coordinate 
-    pull_ngroups            = 2         ; two groups defining one reaction coordinate 
-    pull_group1_name        = Chain_A 
-    pull_group2_name        = Chain_B 
+    pull_ngroups            = 1         ; just the pull group
+    pull_group1_name        = Pull_Chain
     pull-pbc-ref-prev-step-com = yes    ; use the reference group from the previous step since we are pulling a big group
-    pull-group1-pbcatom     = {ref_atom_a_index + n_atom_per_chain * (job.sp.pull_chains[0])}
-    pull-group2-pbcatom     = {ref_atom_b_index + n_atom_per_chain * (list(range(len(job.doc['protofibrils'][0])))[job.sp.pull_chains[1]])}
+    pull-group1-pbcatom     = {ref_atom_index + n_atom_per_chain * (job.sp.pull_chain)}
     pull_coord1_type        = umbrella  ; harmonic potential
-    pull_coord1_geometry    = distance  ; simple distance increase 
-    pull_coord1_dim         = Y Y Y  ; calculate the distance between the centers of mass in all three dimensions
-    pull_coord1_groups      = 1 2
+    pull_coord1_geometry    = direction  ; pull in perpendicular direction to fibril axis
+    pull-coord1-vec         = {perpendicular_vector_str}
+    pull_coord1_groups      = 1
     pull_coord1_start       = yes       ; define initial COM distance > 0
     pull_coord1_rate        = {job.sp.pull_rate}      ;  nm per ps
     pull_coord1_k           = {job.sp.pull_constant}      ; kJ mol^-1 nm^-2
@@ -469,7 +442,7 @@ def create_pull_submission(job):
     with open(job.path + '/run_pulling.sh', 'w') as f:
         data = [
             "#!/bin/bash",
-            f"#SBATCH --job-name=smd_{job.id}",
+            f"#SBATCH --job-name=bsmd_{job.id}",
             "#SBATCH --account=csb_gpu_acc",
             "#SBATCH --partition=pascal",  
             "#SBATCH --gres=gpu:1",
@@ -535,11 +508,11 @@ def preprocess_pull(job):
     n_chains = len(job.doc['protofibrils'][0]) # Number of chains in the first protofibril
     chain = extract_chain('../0_preprocess/protofibril.pdb', list(job.doc['protofibrils'][0].keys())[0])
     n_residues = calculate_n_residues(chain)
-    chain_b = list(range(n_chains))[job.sp.pull_chains[1]] + 1 # 1-indexed chain number 
+    chain_id = list(range(n_chains))[job.sp.pull_chain] + 1 # 1-indexed chain number 
     
-    # Remove positional restraints for all chains restraint chain
+    # Remove positional restraints for all chains except restraint chain
     for chain in job.doc['protofibrils'][0].keys():
-        if chain != list(job.doc['protofibrils'][0].keys())[job.sp.pull_chains[1]]:
+        if chain != list(job.doc['protofibrils'][0].keys())[job.sp.restrain_chain]:
             os.system(f"sed -i '/; Include Position restraint file/,/#endif/d' ../0_preprocess/topol_Protein_chain_{chain}.itp")
 
     # Make index file
@@ -551,7 +524,7 @@ def preprocess_pull(job):
         for line in f:
             if "[" in line:
                 n_groups += 1
-    os.system(f". ~/load_gromacs.sh; gmx make_ndx -f ../3_eq_npt/npt.gro -o index.ndx<<EOF\nri 1-{n_residues}\nname {n_groups} Chain_A\nri {n_residues*(chain_b - 1)+1}-{n_residues * chain_b}\nname {n_groups+1} Chain_B\nq\nEOF")
+    os.system(f". ~/load_gromacs.sh; gmx make_ndx -f ../3_eq_npt/npt.gro -o index.ndx<<EOF\nri 1-{n_residues}\nname {n_groups} Pull_Chain\nq\nEOF")
 
     # Create the pull code
     os.system(". ~/load_gromacs.sh; gmx grompp -f pull.mdp -c ../3_eq_npt/npt.gro -p ../0_preprocess/topol.top -r ../3_eq_npt/npt.gro -n index.ndx -t ../3_eq_npt/npt.cpt -o pull.tpr")
@@ -564,6 +537,7 @@ def run_pull(job):
     return "sbatch run_pulling.sh"
 
 @Project.pre(ran_pull)
+@Project.pre.isfile('0_preprocess/protofibril.pdb')
 @Project.post(lambda job: job.doc.get('stress'))
 @Project.operation
 def run_analysis(job):
@@ -593,16 +567,12 @@ def run_analysis(job):
     Exception Handling:
     - If any step fails, the function prints a message indicating the failure and returns without further processing.
     """
-    # Calculate the cross-sectional area
-    if not os.path.exists(job.path + '/0_preprocess/protofibril.pdb'):
-        print(f"Protofibril.pdb not found for {job.id}")
-        return
-    else:
-        print(f"Running analysis on {job.id}")
+
+    print(f"Running analysis on {job.id}")
+
     try:
-        fibril_axis = [0, 0, 0]
-        fibril_axis[job.doc['growth_axis']] = 1
-        cross_sectional_area = calculate_cross_sectional_area(fibril_axis, job.path+ '/0_preprocess/protofibril.pdb')
+        # Calculate the cross-sectional area
+        cross_sectional_area = calculate_cross_sectional_area(job, probe_radius = .6)
         cross_sectional_area = cross_sectional_area * 1e-20 # A^2 to m^2
         job.doc['cross_sectional_area'] = cross_sectional_area
 
@@ -623,11 +593,9 @@ def run_analysis(job):
         job.doc['ultimate_tensile_strength'] = ultimate_tensile_strength
 
         # Calculate the elastic modulus, assuming there is no plastic deformation
-        max_stress_index = np.argmax(stress)
-        max_stress = stress[max_stress_index]
-        strain_at_max = strain[max_stress_index]
-        elastic_modulus = max_stress / strain_at_max
-        job.doc['elastic_modulus'] = elastic_modulus
+        E, yield_point = estimate_elastic_modulus(stress, strain)
+        job.doc['elastic_modulus'] = E
+        job.doc['yield_point'] = yield_point
     except:
         print(f"Analysis failed for {job.id}")
         return

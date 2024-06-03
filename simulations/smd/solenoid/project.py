@@ -11,7 +11,7 @@ import signac
 from sklearn.decomposition import PCA
 import pymol2
 from Bio.PDB import PDBParser, PDBIO, Select
-from biomatsims.utils import *
+from fiberForge.utils import *
 
 import warnings
 warnings.simplefilter(action='ignore')
@@ -520,7 +520,7 @@ def create_eq_submission(job):
             "module load OpenMPI/3.1.4",
             "module load GROMACS/2020",
             "source ~/.bashrc",
-            "conda activate biomatsims",
+            "conda activate fiberForge",
             "",
             "cp ../../in_files/minim.mdp 1_min",
             "cp ../../in_files/nvt.mdp 2_eq_nvt",
@@ -566,7 +566,7 @@ def create_pull_submission(job):
             "module load OpenMPI/3.1.4",
             "module load GROMACS/2020",
             "source ~/.bashrc",
-            "conda activate biomatsims",
+            "conda activate fiberForge",
             "",
             "cd 4_smd",
             "gmx mdrun -deffnm pull",

@@ -1,5 +1,5 @@
 """
-Unit and regression test for the biomatsims package.
+Unit and regression test for the fiberForge package.
 """
 
 # Import package, test suite, and other packages as needed
@@ -7,9 +7,9 @@ import sys
 
 import pytest
 
-import biomatsims
+import fiberForge
 
 
-def test_biomatsims_imported():
+def test_fiberForge_imported():
     """Sample test, will always pass so long as import statement worked."""
-    assert "biomatsims" in sys.modules
+    assert "fiberForge" in sys.modules

@@ -16,7 +16,7 @@ sp = {
         "pull_constant": 5000, # kJ/mol/nm^2
         "pull_rate": 0.01, # nm/ps
         "pull_steps": 250000,
-        "data_dir": "/data/yang_lab/nehilpkd/biomatsims/smd/solenoid_fibril/dataset",
+        "data_dir": "/data/yang_lab/nehilpkd/fiberForge/smd/solenoid_fibril/dataset",
 }
 
 pdbs = [
