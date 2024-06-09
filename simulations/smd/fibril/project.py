@@ -7,8 +7,8 @@ import numpy as np
 from flow import FlowProject
 from flow.environment import DefaultSlurmEnvironment
 
-from fiberForge.characterization import calculate_variable_over_time
-from fiberForge.geometry_analysis import identify_protofibrils, identify_growth_axis, calculate_cross_sectional_area
+from fiberForge.characterization import calculate_variable_over_time, estimate_elastic_modulus
+from fiberForge.geometry_analysis import identify_protofibrils, identify_growth_axis
 from fiberForge.utils import (
     rename_amino_acid, 
     renumber_residues, 
@@ -20,6 +20,7 @@ from fiberForge.utils import (
     discontinuous_residue_position,
     find_bounding_box
 )
+from fiberForge.build import calculate_cross_sectional_area
 
 class Project(FlowProject):
     """Subclass of FlowProject to provide custom methods and attributes."""
@@ -599,7 +600,6 @@ def run_analysis(job):
         return
     else:
         print(f"Running analysis on {job.id}")
-    try:
         fibril_axis = [0, 0, 0]
         fibril_axis[job.doc['growth_axis']] = 1
         cross_sectional_area = calculate_cross_sectional_area(fibril_axis, job.path+ '/0_preprocess/protofibril.pdb')
@@ -623,14 +623,9 @@ def run_analysis(job):
         job.doc['ultimate_tensile_strength'] = ultimate_tensile_strength
 
         # Calculate the elastic modulus, assuming there is no plastic deformation
-        max_stress_index = np.argmax(stress)
-        max_stress = stress[max_stress_index]
-        strain_at_max = strain[max_stress_index]
-        elastic_modulus = max_stress / strain_at_max
-        job.doc['elastic_modulus'] = elastic_modulus
-    except:
-        print(f"Analysis failed for {job.id}")
-        return
+        E, yield_point = estimate_elastic_modulus(stress, strain)
+        job.doc['elastic_modulus'] = E
+        job.doc['yield_point'] = yield_point
 
 @Project.pre.isfile('4_smd/pull.trr')
 @Project.post(lambda job: not job.isfile('4_smd/pull.trr'))
