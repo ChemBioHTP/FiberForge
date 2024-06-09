@@ -324,7 +324,6 @@ def finished_pull(job):
 @Project.post.isfile('0_preprocess/solvated_ions.gro')
 @Project.operation
 def preprocess_pdb(job):
-    try:
         if job.isfile(f'0_preprocess/solvated_ions.gro'):
             print(f"PDB file for {job.id} already preprocessed")
             return
@@ -399,9 +398,6 @@ def preprocess_pdb(job):
         os.system(f". ~/load_gromacs.sh;gmx grompp -f ions.mdp -c solvated.gro -p topol.top -o ions.tpr")
         os.system(f". ~/load_gromacs.sh;echo SOL | gmx genion -s ions.tpr -o solvated_ions.gro -p topol.top -pname NA -nname CL -neutral")
 
-    except:
-        print('Preprocess_pdb failed for ', job.id)
-
 @Project.pre.isfile('3_eq_npt/npt.gro')
 @Project.pre.isfile('4_smd/pull.mdp')
 @Project.post.isfile('4_smd/pull.tpr')
@@ -413,9 +409,9 @@ def preprocess_pull(job):
     os.chdir(job.path + '/4_smd')
 
     # Calculate the number of residues in a chain of the protofibril
-    chains = extract_chain_ids(f'../0_preprocess/{job.sp.pdbID}_processed.pdb')
+    chains = extract_chain_ids(f'../0_preprocess/protofibril.pdb')
     n_chains = len(chains)
-    chain = extract_chain(f'../0_preprocess/{job.sp.pdbID}_processed.pdb', 'A')
+    chain = extract_chain(f'../0_preprocess/protofibril.pdb', 'A')
     n_residues = calculate_n_residues(chain)
     chain_b = list(range(n_chains))[job.sp.pull_group2] + 1 # 1-indexed chain number
 

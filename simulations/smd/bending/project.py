@@ -8,7 +8,7 @@ from flow import FlowProject
 from flow.environment import DefaultSlurmEnvironment
 
 from fiberForge.characterization import calculate_variable_over_time, estimate_elastic_modulus
-from fiberForge.geometry_analysis import identify_protofibrils, identify_growth_axis, calculate_cross_sectional_area, estimate_rotation_translation_between_chains
+from fiberForge.geometry_analysis import identify_protofibrils, identify_growth_axis, estimate_rotation_translation_between_chains
 from fiberForge.utils import (
     rename_amino_acid, 
     renumber_residues, 
@@ -20,6 +20,7 @@ from fiberForge.utils import (
     discontinuous_residue_position,
     find_bounding_box
 )
+from fiberForge.build import calculate_cross_sectional_area
 
 class Project(FlowProject):
     """Subclass of FlowProject to provide custom methods and attributes."""
@@ -386,12 +387,12 @@ def create_pull_mdp(job):
     tau_t       = 1.0       1.0
     ref_t       = 310       310
     ; Pressure coupling is on
-    Pcoupl          = Parrinello-Rahman 
-    pcoupltype      = isotropic
-    tau_p           = 2.0       
-    compressibility = 4.5e-5
-    ref_p           = 1.0
-    refcoord_scaling = com
+    ;Pcoupl          = Parrinello-Rahman 
+    ;pcoupltype      = isotropic
+    ;tau_p           = 2.0       
+    ;compressibility = 4.5e-5
+    ;ref_p           = 1.0
+    ;refcoord_scaling = com
     ; Generate velocities is off
     gen_vel     = no 
     ; Periodic boundary conditions are on in all directions
@@ -406,9 +407,9 @@ def create_pull_mdp(job):
     pull-pbc-ref-prev-step-com = yes    ; use the reference group from the previous step since we are pulling a big group
     pull-group1-pbcatom     = {ref_atom_index + n_atom_per_chain * (job.sp.pull_chain)}
     pull_coord1_type        = umbrella  ; harmonic potential
-    pull_coord1_geometry    = direction  ; pull in perpendicular direction to fibril axis
+    pull_coord1_geometry    = direction-periodic  ; pull in perpendicular direction to fibril axis
     pull-coord1-vec         = {perpendicular_vector_str}
-    pull_coord1_groups      = 1
+    pull_coord1_groups      = 0 1
     pull_coord1_start       = yes       ; define initial COM distance > 0
     pull_coord1_rate        = {job.sp.pull_rate}      ;  nm per ps
     pull_coord1_k           = {job.sp.pull_constant}      ; kJ mol^-1 nm^-2
@@ -570,35 +571,36 @@ def run_analysis(job):
 
     print(f"Running analysis on {job.id}")
 
-    try:
-        # Calculate the cross-sectional area
-        cross_sectional_area = calculate_cross_sectional_area(job, probe_radius = .6)
-        cross_sectional_area = cross_sectional_area * 1e-20 # A^2 to m^2
-        job.doc['cross_sectional_area'] = cross_sectional_area
+    # try:
+    
+    # Calculate the cross-sectional area
+    cross_sectional_area = calculate_cross_sectional_area(job)
+    cross_sectional_area = cross_sectional_area * 1e-20 # A^2 to m^2
+    job.doc['cross_sectional_area'] = cross_sectional_area
 
-        # Calculate the strain in units of nm
-        time_length = calculate_variable_over_time(job.path + '/4_smd/pull_pullx.xvg')
-        length_over_time = np.array([l for (t, l) in time_length])
-        strain = (length_over_time - length_over_time[0]) / length_over_time[0]
-        job.doc['strain'] = strain # nm/nm of pull distance
+    # Calculate the strain in units of nm
+    time_length = calculate_variable_over_time(job.path + '/4_smd/pull_pullx.xvg')
+    length_over_time = np.array([l for (t, l) in time_length])
+    strain = (length_over_time - length_over_time[0]) / length_over_time[0]
+    job.doc['strain'] = strain # nm/nm of pull distance
 
-        # Calculate the stress
-        time_force = calculate_variable_over_time(job.path + '/4_smd/pull_pullf.xvg')
-        force_over_time = np.array([f for (t, f) in time_force]) * (1e-9) * (1/1000) # kJ/mol/nm to N
-        stress = force_over_time / cross_sectional_area
-        job.doc['stress'] = stress
+    # Calculate the stress
+    time_force = calculate_variable_over_time(job.path + '/4_smd/pull_pullf.xvg')
+    force_over_time = np.array([f for (t, f) in time_force]) * (1e-9) * (1/1000) # kJ/mol/nm to N
+    stress = force_over_time / cross_sectional_area
+    job.doc['stress'] = stress
 
-        # Calculate the ultimate tensile strength
-        ultimate_tensile_strength = np.max(stress)
-        job.doc['ultimate_tensile_strength'] = ultimate_tensile_strength
+    # Calculate the ultimate tensile strength
+    ultimate_tensile_strength = np.max(stress)
+    job.doc['ultimate_tensile_strength'] = ultimate_tensile_strength
 
-        # Calculate the elastic modulus, assuming there is no plastic deformation
-        E, yield_point = estimate_elastic_modulus(stress, strain)
-        job.doc['elastic_modulus'] = E
-        job.doc['yield_point'] = yield_point
-    except:
-        print(f"Analysis failed for {job.id}")
-        return
+    # Calculate the elastic modulus, assuming there is no plastic deformation
+    E, yield_point = estimate_elastic_modulus(stress, strain)
+    job.doc['elastic_modulus'] = E
+    job.doc['yield_point'] = yield_point
+    # except:
+    #     print(f"Analysis failed for {job.id}")
+    #     return
 
 @Project.pre.isfile('4_smd/pull.trr')
 @Project.post(lambda job: not job.isfile('4_smd/pull.trr'))

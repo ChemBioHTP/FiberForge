@@ -28,6 +28,10 @@ def estimate_elastic_modulus(stress, strain):
     x = moving_avg['strain'].values[args]
     y = moving_avg['stress'].values[args]
 
+    # Make x strictly increasing
+    x, idx = np.unique(x, return_index=True)
+    y = y[idx]
+
     # Create a cubic spline
     cs = CubicSpline(x, y)
 

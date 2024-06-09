@@ -3,6 +3,7 @@ import numpy as np
 from plotly import graph_objects as go
 from fiberForge.geometry_analysis import estimate_rotation_translation_between_chains
 from scipy.optimize import minimize
+import mdtraj
 
 
 def visualize_rotation_translation(pdb_file, chain1_id, chain2_id):
@@ -252,6 +253,36 @@ def calculate_average_rotation_translation(pdb_file):
     
     return rotation_matrix, translation
 
+
+
+def calculate_cross_sectional_area(job, probe_size=0.6):
+
+    def project_onto_surface(vector_to_project, surface_normal):
+        surface_normal = surface_normal / np.linalg.norm(surface_normal)
+        scalar_projection = np.dot(vector_to_project, surface_normal)
+        vector_projection = scalar_projection * surface_normal
+        projected_vector = vector_to_project - vector_projection
+        return projected_vector
+    
+    pdb_file = job.path + '/0_preprocess/protofibril.pdb'
+
+    # Load the GRO file using MDTraj
+    traj = mdtraj.load(pdb_file)
+
+    # Select the protein atoms
+    protein_traj = traj.atom_slice(traj.top.select('protein'))
+
+    # Calculate the van der Waals surface using MDTraj for the protein
+    vdw_surface = mdtraj.shrake_rupley(protein_traj, probe_radius=probe_size)
+
+    R, t = calculate_average_rotation_translation(pdb_file)
+    fibril_axis = t
+    # Project the van der Waals surface onto the fibril axis
+    projected_surface = np.array([project_onto_surface(v, fibril_axis) for v in vdw_surface[0]])
+    # Calculate cross-sectional area by summing the projected surface
+    cross_section_area = np.sum(projected_surface)
+
+    return cross_section_area
 
 def build_fibril(chain, rotation, translation, n_units):
     import mbuild as mb
