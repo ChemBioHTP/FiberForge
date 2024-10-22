@@ -1,6 +1,9 @@
 import Bio
 import Bio.SeqUtils
 from Bio.PDB import PDBParser, PDBIO, Select
+import pymol2
+import numpy as np
+import os
 
 def single_to_triple(seq):
 	seq = [Bio.SeqUtils.IUPACData.protein_letters_1to3[aa] for aa in seq]

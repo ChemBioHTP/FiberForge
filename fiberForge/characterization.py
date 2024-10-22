@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from scipy.interpolate import CubicSpline
 
-def estimate_elastic_modulus(stress, strain):
+def estimate_elastic_modulus(stress, strain, window_size=400,):
     """
     Estimate the elastic modulus from a stress-strain curve.
     
@@ -18,9 +18,13 @@ def estimate_elastic_modulus(stress, strain):
     float
         The elastic modulus.
     """
-    window_size = 400
     df = pd.DataFrame({'strain': strain, 'stress': stress})
-    moving_avg = df.rolling(window=window_size).mean()
+    while True:
+        moving_avg = df.rolling(window=window_size).mean()
+        if moving_avg.isnull().values.all():
+            window_size = window_size // 2
+        else:
+            break
     moving_avg = moving_avg.dropna()
     
 
@@ -44,7 +48,7 @@ def estimate_elastic_modulus(stress, strain):
 
     dy2_dx2_fine = cs_derivative.derivative()(x_fine)
 
-    inflection_points = np.isclose(dy2_dx2_fine, 0.0, atol=1e11) == 1
+    inflection_points = np.isclose(dy2_dx2_fine, 0.0, atol=1e13) == 1
 
     E = (y_fine[inflection_points][0] - y_fine[0]) / (x_fine[inflection_points][0] - x_fine[0])
 

@@ -32,9 +32,6 @@ class Accre(DefaultSlurmEnvironment):
 ######################
 ### Utility functions
 ######################
-
-
-
 def remove_ligands_water_ions(input_pdb, output_file):
     with pymol2.PyMOL() as pymol:
         pymol.cmd.load(input_pdb)
@@ -409,9 +406,9 @@ def preprocess_pull(job):
     os.chdir(job.path + '/4_smd')
 
     # Calculate the number of residues in a chain of the protofibril
-    chains = extract_chain_ids(f'../0_preprocess/protofibril.pdb')
+    chains = extract_chain_ids(f'../0_preprocess/{job.sp.pdbID}.pdb')
     n_chains = len(chains)
-    chain = extract_chain(f'../0_preprocess/protofibril.pdb', 'A')
+    chain = extract_chain(f'../0_preprocess/{job.sp.pdbID}.pdb', 'A')
     n_residues = calculate_n_residues(chain)
     chain_b = list(range(n_chains))[job.sp.pull_group2] + 1 # 1-indexed chain number
 
@@ -433,11 +430,6 @@ def preprocess_pull(job):
 
     # Create the pull code
     os.system(". ~/load_gromacs.sh; gmx grompp -f pull.mdp -c ../3_eq_npt/npt.gro -p ../0_preprocess/topol.top -r ../3_eq_npt/npt.gro -n index.ndx -t ../3_eq_npt/npt.cpt -o pull.tpr")
-
-
-# @Project.operation
-# def create_eq_mdp(job):
-#     pass
 
 @Project.pre.isfile('3_eq_npt/npt.gro')
 @Project.post.isfile('4_smd/pull.mdp')

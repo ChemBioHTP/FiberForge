@@ -20,7 +20,7 @@ from fiberForge.utils import (
     discontinuous_residue_position,
     find_bounding_box
 )
-from fiberForge.build import calculate_cross_sectional_area
+from fiberForge.build import calculate_cross_sectional_area, build_fibril_biopython
 
 class Project(FlowProject):
     """Subclass of FlowProject to provide custom methods and attributes."""
@@ -135,15 +135,20 @@ def preprocess_pdb(job):
         return
 
     # Preprocess the PDB file
-    input_pdb = f"{job.sp.fiberverse_directory}/{job.sp.pdbID}.pdb"
-    renamed_pdb = f"{job.sp.pdbID}_renamed.pdb"
-    renumbered_pdb = f"{job.sp.pdbID}_renumbered.pdb"
-    cleaned_pdb = f"{job.sp.pdbID}_cleaned.pdb"
-    output_pdb = f"{job.sp.pdbID}_processed.pdb"
-    rename_amino_acid(input_pdb, renamed_pdb)
-    renumber_residues(renamed_pdb, renumbered_pdb)
-    remove_ligands_water_ions(renumbered_pdb, cleaned_pdb)
-    add_hydrogens(cleaned_pdb, output_pdb)
+    if job.sp.construct:
+        input_pdb = f"{job.sp.fiberverse_directory}/{job.sp.pdbID}.pdb"
+        build_fibril_biopython(input_pdb, np.array(job.sp['R']), np.array(job.sp['t']), n_units=job.sp.n_strands, output_file='protofibril.pdb')
+        protofibrils = identify_protofibrils('protofibril.pdb', distance_threshold=job.sp.protofibril_distance_threshold)
+    else:
+        input_pdb = f"{job.sp.fiberverse_directory}/{job.sp.pdbID}.pdb"
+        renamed_pdb = f"{job.sp.pdbID}_renamed.pdb"
+        renumbered_pdb = f"{job.sp.pdbID}_renumbered.pdb"
+        cleaned_pdb = f"{job.sp.pdbID}_cleaned.pdb"
+        output_pdb = f"{job.sp.pdbID}_processed.pdb"
+        rename_amino_acid(input_pdb, renamed_pdb)
+        renumber_residues(renamed_pdb, renumbered_pdb)
+        remove_ligands_water_ions(renumbered_pdb, cleaned_pdb)
+        add_hydrogens(cleaned_pdb, output_pdb)
 
 
     # Unbundle fibril
@@ -343,9 +348,9 @@ def create_pull_mdp(job):
         job.fn('0_preprocess/protofibril.pdb'),
         pull_chain_name,
         restrain_chain_name
-        
     )
     perpendicular_vector_str = f"{t[0]} {t[1]} {t[2]}"
+    com_str = f"{pull_chain_com[0]} {pull_chain_com[1]} {pull_chain_com[2]}"
 
     lines = f"""title       = Umbrella pulling simulation 
     define      = -DPOSRES
@@ -413,6 +418,7 @@ def create_pull_mdp(job):
     pull_coord1_start       = yes       ; define initial COM distance > 0
     pull_coord1_rate        = {job.sp.pull_rate}      ;  nm per ps
     pull_coord1_k           = {job.sp.pull_constant}      ; kJ mol^-1 nm^-2
+    pull_coord1_origin      = {com_str} 
     """
     with open(job.path + '/4_smd/pull.mdp', 'w') as f:
         f.write(lines)

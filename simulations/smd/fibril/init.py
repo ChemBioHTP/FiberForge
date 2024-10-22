@@ -412,7 +412,8 @@ statepoint = {
     "pull_constant": 1000, 
     "pull_steps": 250000, 
     "pull_rate": 0.01,
-    "protofibril_distance_threshold": 20.0
+    "protofibril_distance_threshold": 20.0,
+    "forcefield": "gromos54a7",
 }
 
 n_replicates = 1

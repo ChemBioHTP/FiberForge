@@ -7,12 +7,12 @@ import itertools
 
 project = signac.init_project('./')
 statepoints = [
-    {"sequence":"FGAILS", 'n_molecules': 30},
-    {"sequence":"VKVKVKVKVPPTKVKVKVKV", 'n_molecules': 10},
-    {"sequence": "VKVKVEVK", 'n_molecules': 30},
-    {"sequence": "FEFEFKFK", 'n_molecules': 30},
+    #{"sequence":"FGAILS", 'n_molecules': 30},
+    #{"sequence":"VKVKVKVKVPPTKVKVKVKV", 'n_molecules': 10},
+    #{"sequence": "VKVKVEVK", 'n_molecules': 30},
+    #{"sequence": "FEFEFKFK", 'n_molecules': 30},
     {"sequence": "ADARADARADARADA", 'n_molecules': 12},
-    {"sequence": "AEAEAKAKAEAEAKAK", 'n_molecules': 30},
+    #{"sequence": "AEAEAKAKAEAEAKAK", 'n_molecules': 30},
 
    
 ]

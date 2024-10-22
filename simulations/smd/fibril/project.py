@@ -172,7 +172,7 @@ def preprocess_pdb(job):
         print("Finished identification of protofibrils")
         
         # Atomtype the protein
-        os.system(f". ~/load_gromacs.sh; gmx pdb2gmx -f protofibril.pdb -o protofibril.gro -ff amber03 -water tip3p -ignh")
+        os.system(f". ~/load_gromacs.sh; gmx pdb2gmx -f protofibril.pdb -o protofibril.gro -ff {job.sp.forcefield} -water tip3p -ignh")
 
         # Center fibril in box
         os.system(f". ~/load_gromacs.sh; gmx editconf -f protofibril.gro -o centered.gro -c")
@@ -308,7 +308,7 @@ def create_eq_submission(job):
             f.write(line + '\n')
 
 @Project.pre.isfile('0_preprocess/solvated_ions.gro')
-@Project.post.isfile('3_eq_npt/npt.gro')
+@Project.post.isfile('3_eq_npt/npt.xtc')
 @Project.operation(cmd=True)
 def run_equilibration(job):
     job.open()
@@ -599,33 +599,37 @@ def run_analysis(job):
         print(f"Protofibril.pdb not found for {job.id}")
         return
     else:
-        print(f"Running analysis on {job.id}")
-        fibril_axis = [0, 0, 0]
-        fibril_axis[job.doc['growth_axis']] = 1
-        cross_sectional_area = calculate_cross_sectional_area(fibril_axis, job.path+ '/0_preprocess/protofibril.pdb')
-        cross_sectional_area = cross_sectional_area * 1e-20 # A^2 to m^2
-        job.doc['cross_sectional_area'] = cross_sectional_area
+        try:
+            print(f"Running analysis on {job.id}")
+            fibril_axis = [0, 0, 0]
+            fibril_axis[job.doc['growth_axis']] = 1
+            cross_sectional_area = calculate_cross_sectional_area(job)
+            cross_sectional_area = cross_sectional_area * 1e-20 # A^2 to m^2
+            job.doc['cross_sectional_area'] = cross_sectional_area
 
-        # Calculate the strain in units of nm
-        time_length = calculate_variable_over_time(job.path + '/4_smd/pull_pullx.xvg')
-        length_over_time = np.array([l for (t, l) in time_length])
-        strain = (length_over_time - length_over_time[0]) / length_over_time[0]
-        job.doc['strain'] = strain # nm/nm of pull distance
+            # Calculate the strain in units of nm
+            time_length = calculate_variable_over_time(job.path + '/4_smd/pull_pullx.xvg')
+            length_over_time = np.array([l for (t, l) in time_length])
+            strain = (length_over_time - length_over_time[0]) / length_over_time[0]
+            job.doc['strain'] = strain # nm/nm of pull distance
 
-        # Calculate the stress
-        time_force = calculate_variable_over_time(job.path + '/4_smd/pull_pullf.xvg')
-        force_over_time = np.array([f for (t, f) in time_force]) * (1e-9) * (1/1000) # kJ/mol/nm to N
-        stress = force_over_time / cross_sectional_area
-        job.doc['stress'] = stress
+            # Calculate the stress
+            time_force = calculate_variable_over_time(job.path + '/4_smd/pull_pullf.xvg')
+            force_over_time = np.array([f for (t, f) in time_force]) * (1e-9) * (1/1000) # kJ/mol/nm to N
+            stress = force_over_time / cross_sectional_area
+            job.doc['stress'] = stress
 
-        # Calculate the ultimate tensile strength
-        ultimate_tensile_strength = np.max(stress)
-        job.doc['ultimate_tensile_strength'] = ultimate_tensile_strength
+            # Calculate the ultimate tensile strength
+            ultimate_tensile_strength = np.max(stress)
+            job.doc['ultimate_tensile_strength'] = ultimate_tensile_strength
 
-        # Calculate the elastic modulus, assuming there is no plastic deformation
-        E, yield_point = estimate_elastic_modulus(stress, strain)
-        job.doc['elastic_modulus'] = E
-        job.doc['yield_point'] = yield_point
+            # Calculate the elastic modulus, assuming there is no plastic deformation
+            E, yield_point = estimate_elastic_modulus(stress, strain)
+            job.doc['elastic_modulus'] = E
+            job.doc['yield_point'] = yield_point
+        except Exception as e:
+            print(e)
+            print(f"Analysis failed for {job.id}")
 
 @Project.pre.isfile('4_smd/pull.trr')
 @Project.post(lambda job: not job.isfile('4_smd/pull.trr'))

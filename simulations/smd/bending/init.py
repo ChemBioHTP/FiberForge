@@ -415,7 +415,8 @@ statepoint = {
     "pull_constant": 5000, 
     "pull_steps": 250000, 
     "pull_rate": 0.01,
-    "protofibril_distance_threshold": 20.0
+    "protofibril_distance_threshold": 20.0,
+    "construct": True
 }
 
 n_replicates = 3
