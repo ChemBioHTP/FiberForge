@@ -76,7 +76,7 @@ def remove_ligands_water_ions(input_pdb, output_file):
         try:
             pymol.cmd.remove('ions')
         except:
-            print('No ions found')
+            pass
 
         # Save the modified structure
         pymol.cmd.save(output_file)
