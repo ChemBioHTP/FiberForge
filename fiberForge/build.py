@@ -1,9 +1,11 @@
 import numpy as np
+import shutil
 from plotly import graph_objects as go
 from scipy.optimize import minimize
 import mdtraj
 from Bio.PDB import PDBParser, PDBIO, Structure, Model, Chain, Residue, Atom
-
+from scipy.optimize import minimize
+from sklearn.decomposition import PCA
 
 # def visualize_rotation_translation(pdb_file, chain1_id, chain2_id):
 #     rotation, translation = estimate_rotation_translation_between_chains(pdb_file, chain1_id, chain2_id)
@@ -360,89 +362,83 @@ def build_fibril_biopython(pdb_file, rotation, translation, n_units, output_file
     io.save(output_file)
 
 
-
 def calculate_average_helical_parameters(pdb_file):
-    """
-    Calculate the average rotation angle, translation, and axis of symmetry for a structure with helical symmetry.
-
-    Parameters:
-    - pdb_file (str): Path to the PDB file.
-
-    Returns:
-    - rotation_angle (float): Average rotation angle in radians.
-    - translation (float): Average translation along the axis of symmetry.
-    - axis (np.array): Axis of symmetry (unit vector).
-    """
-    parser = PDBParser()
+    parser = PDBParser(QUIET=True)
     structure = parser.get_structure("protein", pdb_file)
 
-    chains_coords = []
-    
-    # Iterate over each subsequent chain pair
+    chain_centroids = {}
+    chain_coords = {}
+
     for model in structure:
-        chains = list(model)
-        for i in range(len(chains) - 1):
-            chain1_id = chains[i].id
-            chain2_id = chains[i + 1].id     
-            # Extract coordinates of atoms from the two specified chains
-            coords_chain1 = []
-            coords_chain2 = []
-            for model in structure:
-                for chain in model:
-                    if chain.id == chain1_id:
-                        for residue in chain:
-                            for atom in residue:
-                                coords_chain1.append(atom.get_coord())
-                    elif chain.id == chain2_id:
-                        for residue in chain:
-                            for atom in residue:
-                                coords_chain2.append(atom.get_coord())
-            
-            coords_chain1 = np.array(coords_chain1)
-            coords_chain2 = np.array(coords_chain2)
+        for chain in model:
+            coords = []
+            for residue in chain:
+                for atom in residue:
+                    coords.append(atom.get_coord())
+            coords = np.array(coords)
+            centroid = coords.mean(axis=0)
+            chain_centroids[chain.id] = centroid
+            chain_coords[chain.id] = coords
 
-            chains_coords.append([coords_chain1, coords_chain2])
+    # Infer fibril axis using PCA on centroids
+    centroid_matrix = np.array(list(chain_centroids.values()))
+    pca = PCA(n_components=1)
+    fibril_axis = pca.fit(centroid_matrix).components_[0]
+    projections = {cid: np.dot(c, fibril_axis) for cid, c in chain_centroids.items()}
 
-    # Define the function to minimize (sum of squared distances)
+    # Sort chain IDs by projection along the main axis
+    sorted_chains = sorted(projections, key=projections.get)
+
+    # Create coordinate pairs of spatial neighbors
+    chains_coords = []
+    for i in range(len(sorted_chains) - 1):
+        c1 = sorted_chains[i]
+        c2 = sorted_chains[i + 1]
+        coords1 = chain_coords[c1]
+        coords2 = chain_coords[c2]
+        if coords1.shape[0] == coords2.shape[0]:  # Sanity check
+            chains_coords.append((coords1, coords2))
+
     def objective(params):
         rotation_angle = params[0]
         translation = params[1]
         axis = params[2:5]
-        axis = axis / np.linalg.norm(axis)  # Ensure the axis is a unit vector
-        
-        rotation_matrix = np.array([
-            [np.cos(rotation_angle) + axis[0]**2 * (1 - np.cos(rotation_angle)),
-             axis[0] * axis[1] * (1 - np.cos(rotation_angle)) - axis[2] * np.sin(rotation_angle),
-             axis[0] * axis[2] * (1 - np.cos(rotation_angle)) + axis[1] * np.sin(rotation_angle)],
-            [axis[1] * axis[0] * (1 - np.cos(rotation_angle)) + axis[2] * np.sin(rotation_angle),
-             np.cos(rotation_angle) + axis[1]**2 * (1 - np.cos(rotation_angle)),
-             axis[1] * axis[2] * (1 - np.cos(rotation_angle)) - axis[0] * np.sin(rotation_angle)],
-            [axis[2] * axis[0] * (1 - np.cos(rotation_angle)) - axis[1] * np.sin(rotation_angle),
-             axis[2] * axis[1] * (1 - np.cos(rotation_angle)) + axis[0] * np.sin(rotation_angle),
-             np.cos(rotation_angle) + axis[2]**2 * (1 - np.cos(rotation_angle))]
+        axis = axis / np.linalg.norm(axis)
+
+        # Rodrigues rotation matrix
+        ux, uy, uz = axis
+        c = np.cos(rotation_angle)
+        s = np.sin(rotation_angle)
+        C = 1 - c
+        R = np.array([
+            [c + ux**2*C, ux*uy*C - uz*s, ux*uz*C + uy*s],
+            [uy*ux*C + uz*s, c + uy**2*C, uy*uz*C - ux*s],
+            [uz*ux*C - uy*s, uz*uy*C + ux*s, c + uz**2*C]
         ])
-        
-        total_rmsd = 0.0
-        for (coords_chain1, coords_chain2) in chains_coords:
-            transformed_coords_chain1 = np.dot(coords_chain1, rotation_matrix.T) + translation * axis
-            total_rmsd += np.sum((coords_chain2 - transformed_coords_chain1) ** 2) # Sum of squared distances
-        return total_rmsd
 
-    # Initial guess for rotation angle, translation, and axis
+        total_squared_error = 0.0
+        total_points = 0
+        for coords1, coords2 in chains_coords:
+            transformed = np.dot(coords1, R.T) + translation * axis
+            diff = coords2 - transformed
+            total_squared_error += np.sum(diff ** 2)
+            total_points += coords1.shape[0]
+        return total_squared_error / total_points  # MSE
+
+    # Initial guess
     initial_guess = np.zeros(5)
-    initial_guess[0] = 0.0  # Initial rotation angle
-    initial_guess[1] = 0.0  # Initial translation
-    initial_guess[2:5] = [1.0, 0.0, 0.0]  # Initial axis (x-axis)
+    initial_guess[0] = 0.0  # rotation
+    initial_guess[1] = 1.0  # translation guess (e.g., 1 Å)
+    initial_guess[2:5] = fibril_axis  # axis guess from PCA
 
-    result = minimize(objective, initial_guess, method='BFGS') # Minimize the objective function to estimate parameters
+    result = minimize(objective, initial_guess, method='BFGS')
 
-    # Extract parameters from the result
     rotation_angle = result.x[0]
     translation = result.x[1]
-    axis = result.x[2:5]
-    axis = axis / np.linalg.norm(axis)  # Ensure the axis is a unit vector
+    axis = result.x[2:5] / np.linalg.norm(result.x[2:5])
+    rmsd = np.sqrt(objective(result.x))
 
-    return rotation_angle, translation, axis
+    return rotation_angle, translation, axis, rmsd
 
 def build_fibril_from_scalar_with_biopython(pdb_file, rotation_angle, translation, axis, n_units, output_file):
     """
@@ -450,66 +446,64 @@ def build_fibril_from_scalar_with_biopython(pdb_file, rotation_angle, translatio
     and assembling the results using Biopython.
 
     Parameters:
-    - pdb_file: The path to the PDB file containing the initial chain.
-    - rotation_angle: The rotation angle in radians.
-    - translation: The translation distance along the axis of symmetry.
-    - axis: A 3-element numpy array representing the axis of symmetry (unit vector).
-    - n_units: The number of units to assemble in the fibril.
-    - output_file: The path to the output PDB file where the fibril structure will be saved.
-    
-    Returns:
-    - None: The fibril structure is saved to the output PDB file.
+    - pdb_file: Path to the PDB file containing the initial chain.
+    - rotation_angle: Rotation angle in radians.
+    - translation: Translation distance along the axis of symmetry.
+    - axis: 3-element numpy array representing the axis of symmetry (unit vector).
+    - n_units: Number of units to assemble in the fibril.
+    - output_file: Output PDB file path for the fibril structure.
     """
-    # Parse the PDB file
     parser = PDBParser(QUIET=True)
     structure = parser.get_structure('input_structure', pdb_file)
-    
-    # Get the first model, chain, and residue as the starting point
     model = structure[0]
-    chain = model.child_list[0]  # Assumes single chain in input
-    
-    # Create a new structure for the fibril
+    axis = axis / np.linalg.norm(axis)
+
+    # Get all chain centroids and find the one lowest along the axis
+    chain_centroids = {}
+    for chain in model:
+        coords = [atom.get_coord() for residue in chain for atom in residue]
+        centroid = np.mean(coords, axis=0)
+        chain_centroids[chain.id] = centroid
+
+    projections = {cid: np.dot(centroid, axis) for cid, centroid in chain_centroids.items()}
+    sorted_chain_id = sorted(projections, key=projections.get)[0]
+    base_chain = model[sorted_chain_id]
+
+    # Create a new structure and model for the output fibril
     fibril_structure = Structure.Structure('fibril_structure')
     fibril_model = Model.Model(0)
     fibril_structure.add(fibril_model)
-    
-    # Define the rotation matrix function
+
     def get_rotation_matrix(angle, axis):
         axis = axis / np.linalg.norm(axis)
-        cos_angle = np.cos(angle)
-        sin_angle = np.sin(angle)
+        c, s = np.cos(angle), np.sin(angle)
         ux, uy, uz = axis
         return np.array([
-            [cos_angle + ux**2 * (1 - cos_angle), ux * uy * (1 - cos_angle) - uz * sin_angle, ux * uz * (1 - cos_angle) + uy * sin_angle],
-            [uy * ux * (1 - cos_angle) + uz * sin_angle, cos_angle + uy**2 * (1 - cos_angle), uy * uz * (1 - cos_angle) - ux * sin_angle],
-            [uz * ux * (1 - cos_angle) - uy * sin_angle, uz * uy * (1 - cos_angle) + ux * sin_angle, cos_angle + uz**2 * (1 - cos_angle)]
+            [c + ux**2*(1-c), ux*uy*(1-c) - uz*s, ux*uz*(1-c) + uy*s],
+            [uy*ux*(1-c) + uz*s, c + uy**2*(1-c), uy*uz*(1-c) - ux*s],
+            [uz*ux*(1-c) - uy*s, uz*uy*(1-c) + ux*s, c + uz**2*(1-c)]
         ])
-    
-    # Loop over the number of units
+
     for i in range(n_units):
-        # Calculate the rotation matrix for the current unit
-        rotation_matrix = get_rotation_matrix(rotation_angle * i, axis)
-        
-        # Create a new chain for the current unit
-        new_chain = Chain.Chain(chr(65 + i))  # Chain names: A, B, C, ...
-        
-        # Copy residues from the original chain and apply transformations
-        for residue in chain:
+        rot_matrix = get_rotation_matrix(rotation_angle * i, axis)
+        new_chain = Chain.Chain(chr(65 + i))  # A, B, C, ...
+
+        for residue in base_chain:
             new_residue = Residue.Residue(residue.id, residue.resname, residue.segid)
             for atom in residue:
-                new_coord = np.dot(atom.coord, rotation_matrix.T) + translation * i * axis
-                new_atom = Atom.Atom(atom.name, new_coord, atom.bfactor, atom.occupancy, atom.altloc, atom.fullname, atom.element)
+                new_coord = np.dot(atom.coord, rot_matrix.T) + translation * i * axis
+                new_atom = Atom.Atom(
+                    atom.name, new_coord, atom.bfactor, atom.occupancy,
+                    atom.altloc, atom.fullname, atom.element
+                )
                 new_residue.add(new_atom)
             new_chain.add(new_residue)
-        
-        # Add the new chain to the fibril model
+
         fibril_model.add(new_chain)
-    
-    # Save the fibril structure to a PDB file
+
     io = PDBIO()
     io.set_structure(fibril_structure)
     io.save(output_file)
-
 
 
 def identify_protofibrils(pdb_file, distance_threshold=20.0):
@@ -549,3 +543,51 @@ def identify_protofibrils(pdb_file, distance_threshold=20.0):
             protofibrils.append({chain_id: center})
 
     return protofibrils
+
+import numpy as np
+from Bio.PDB import PDBParser, PDBIO
+
+def rotation_matrix_from_vectors(vec1, vec2):
+    """ Find the rotation matrix that aligns vec1 to vec2 """
+    a = vec1 / np.linalg.norm(vec1)
+    b = vec2 / np.linalg.norm(vec2)
+    v = np.cross(a, b)
+    c = np.dot(a, b)
+    if np.isclose(c, -1.0):
+        # Vectors are opposite
+        orthogonal = np.array([1, 0, 0]) if not np.allclose(a, [1, 0, 0]) else np.array([0, 1, 0])
+        v = np.cross(a, orthogonal)
+        v = v / np.linalg.norm(v)
+        H = np.array([[0, -v[2], v[1]], [v[2], 0, -v[0]], [-v[1], v[0], 0]])
+        R = -np.eye(3) + 2 * np.outer(v, v)
+    else:
+        s = np.linalg.norm(v)
+        kmat = np.array([[0, -v[2], v[1]],
+                         [v[2], 0, -v[0]],
+                         [-v[1], v[0], 0]])
+        R = np.eye(3) + kmat + kmat @ kmat * ((1 - c) / (s ** 2))
+    return R
+
+def align_axis_to_z(input_pdb, output_pdb, axis):
+    # Normalize the growth axis and compute rotation matrix
+    axis = axis / np.linalg.norm(axis)
+    target_axis = np.array([0, 0, 1])
+    rot_matrix = rotation_matrix_from_vectors(axis, target_axis)
+
+    # Parse the PDB
+    parser = PDBParser(QUIET=True)
+    structure = parser.get_structure("fibril", input_pdb)
+
+    # Rotate atoms
+    for model in structure:
+        for chain in model:
+            for residue in chain:
+                for atom in residue:
+                    coord = atom.get_coord()
+                    new_coord = np.dot(rot_matrix, coord)
+                    atom.set_coord(new_coord)
+
+    # Save the rotated structure
+    io = PDBIO()
+    io.set_structure(structure)
+    io.save(output_pdb)
