@@ -214,6 +214,27 @@ def rename_amino_acid(pdb_file_path, output_pdb_path):
 
 
 
+def clean_structure(input_pdb, output_pdb, working_dir=None):
+    """
+    Clean a PDB structure by removing water and non-standard residues.
+
+    Args:
+        input_pdb (str): Path to the input PDB file.
+        output_pdb (str): Path to the output cleaned PDB file.
+    """
+    pdbID = os.path.basename(input_pdb).split('.')[0]
+
+    renamed_pdb = f"{working_dir}/{pdbID}_renamed.pdb"
+    renumbered_pdb = f"{working_dir}/{pdbID}_renumbered.pdb"
+    cleaned_pdb = f"{working_dir}/{pdbID}_cleaned.pdb"
+    rename_amino_acid(input_pdb, renamed_pdb)
+    renumber_residues(renamed_pdb, renumbered_pdb)
+    remove_ligands_water_ions(renumbered_pdb, cleaned_pdb)
+    add_hydrogens(cleaned_pdb, output_pdb)
+
+
+
+
 
 if __name__ == "__main__":
 	res = single_to_triple('GAG')
