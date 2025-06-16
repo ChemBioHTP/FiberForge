@@ -6,6 +6,8 @@ import mdtraj
 from Bio.PDB import PDBParser, PDBIO, Structure, Model, Chain, Residue, Atom
 from scipy.optimize import minimize
 from sklearn.decomposition import PCA
+import os
+import subprocess
 
 # def visualize_rotation_translation(pdb_file, chain1_id, chain2_id):
 #     rotation, translation = estimate_rotation_translation_between_chains(pdb_file, chain1_id, chain2_id)
@@ -591,3 +593,104 @@ def align_axis_to_z(input_pdb, output_pdb, axis):
     io = PDBIO()
     io.set_structure(structure)
     io.save(output_pdb)
+
+
+def solvate_fibril(
+    input_structure,
+    output_gro,
+    topol_file,
+    box=None,
+    water_model='spc216.gro',
+    gmx_path='gmx',
+    expand_box=True
+):
+    """
+    Solvate a built fibril using GROMACS.
+
+    Args:
+        input_structure (str): Path to the input GRO or PDB file.
+        output_gro (str): Path to the output solvated GRO file.
+        topol_file (str): Path to the topology file (topol.top).
+        box (tuple or list, optional): Box dimensions (nm) as (x, y, z). If None, box is not changed.
+        water_model (str): Water model file for solvation (default: 'spc216.gro').
+        gmx_path (str): Command to run GROMACS (e.g., '. ~/load_gromacs.sh; gmx').
+        expand_box (bool): Whether to expand the box if box is provided (default: True).
+    """
+    import os
+    structure_for_solvation = input_structure
+    if box is not None and expand_box:
+        expanded = 'expanded_for_solvation.gro'
+        editconf_cmd = f"{gmx_path} editconf -f {input_structure} -o {expanded} -box {box[0]} {box[1]} {box[2]}"
+        if os.system(editconf_cmd) != 0:
+            raise RuntimeError(f'Failed to run: {editconf_cmd}')
+        structure_for_solvation = expanded
+    solvate_cmd = f"{gmx_path} solvate -cp {structure_for_solvation} -cs {water_model} -p {topol_file} -o {output_gro}"
+    if os.system(solvate_cmd) != 0:
+        raise RuntimeError(f'Failed to run: {solvate_cmd}')
+    if structure_for_solvation != input_structure:
+        os.remove(structure_for_solvation)
+
+def neutralize_system(
+    structure_file,
+    topol_file,
+    mdp_file,
+    output_tpr,
+    output_gro,
+    gmx_load_command=None,
+    p_name='NA',
+    n_name='CL',
+    group_name='SOL',
+    maxwarn=1
+):
+    """
+    Prepare the system for ion addition and neutralize using GROMACS.
+
+    Args:
+        structure_file (str): Path to the input structure file (usually .gro).
+        topol_file (str): Path to the topology file (topol.top).
+        mdp_file (str): Path to the ions.mdp file.
+        output_tpr (str): Path to the output tpr file.
+        output_gro (str): Path to the output neutralized gro file.
+        gmx_path (str): Command to run GROMACS (default: 'gmx').
+        p_name (str): Name for positive ion (default: 'NA').
+        n_name (str): Name for negative ion (default: 'CL').
+        group_name (str): Name of the solvent group (default: 'SOL').
+        maxwarn (int): Maximum warnings for grompp (default: 1).
+    """
+    import os
+    grompp_cmd = f"{gmx_load_command};gmx grompp -f {mdp_file} -c {structure_file} -p {topol_file} -o {output_tpr} -maxwarn {maxwarn}"
+    if os.system(grompp_cmd) != 0:
+        raise RuntimeError(f'Failed to run: {grompp_cmd}')
+    genion_cmd = f"{gmx_load_command};echo {group_name} | gmx genion -s {output_tpr} -o {output_gro} -p {topol_file} -pname {p_name} -nname {n_name} -neutral"
+    if os.system(genion_cmd) != 0:
+        raise RuntimeError(f'Failed to run: {genion_cmd}')
+
+def center_fibril(input_file, output_file, gmx_path='gmx'):
+    """
+    Center the fibril in the simulation box using GROMACS editconf.
+
+    Args:
+        input_file (str): Path to the input structure file (PDB or GRO).
+        output_file (str): Path to the output centered structure file.
+        gmx_path (str): Command to run GROMACS (default: 'gmx').
+    """
+    import os
+    cmd = f"{gmx_path} editconf -f {input_file} -o {output_file} -c"
+    if os.system(cmd) != 0:
+        raise RuntimeError(f'Failed to run: {cmd}')
+
+def atomtype_protein(input_pdb, output_gro, forcefield, gmx_path='gmx', water_model='spce'):
+    """
+    Generate a GROMACS-compatible GRO file from a PDB file using pdb2gmx.
+
+    Args:
+        input_pdb (str): Path to the input PDB file.
+        output_gro (str): Path to the output GRO file.
+        forcefield (str): Forcefield name for pdb2gmx.
+        gmx_path (str): Command to run GROMACS (default: 'gmx').
+        water_model (str): Water model to use (default: 'spce').
+    """
+    import os
+    cmd = f"{gmx_path} pdb2gmx -f {input_pdb} -o {output_gro} -ff {forcefield} -water {water_model} -ignh"
+    if os.system(cmd) != 0:
+        raise RuntimeError(f'Failed to run: {cmd}')
