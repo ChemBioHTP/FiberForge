@@ -296,73 +296,6 @@ def calculate_cross_sectional_area(pdb_file, probe_size=0.6):
 
     return cross_section_area
 
-def build_fibril(chain, rotation, translation, n_units):
-    import mbuild as mb
-    predicted_fibril = mb.Compound()
-    for i in range(n_units):
-        chain_copy = mb.clone(chain)
-        rotation_matrix = np.linalg.matrix_power(rotation, i)
-        chain_copy.xyz = np.dot(chain_copy.xyz, rotation_matrix.T)
-        chain_copy.translate(translation * i / 10.0) # need to scale translation and convert to correct units
-        predicted_fibril.add(chain_copy)
-    return predicted_fibril
-
-def build_fibril_biopython(pdb_file, rotation, translation, n_units, output_file):
-    """
-    Builds a fibril by applying rotations and translations to a chain from a given PDB file
-    and assembling the results using Biopython.
-
-    Parameters:
-    - pdb_file: The path to the PDB file containing the initial chain.
-    - rotation: A 3x3 numpy array representing the rotation matrix.
-    - translation: A 3-element numpy array representing the translation vector.
-    - n_units: The number of units to assemble in the fibril.
-    - output_file: The path to the output PDB file where the fibril structure will be saved.
-    
-    Returns:
-    - None: The fibril structure is saved to the output PDB file.
-    """
-    import numpy as np
-    from Bio.PDB import PDBParser, PDBIO, Superimposer
-    from Bio.PDB import Structure, Model, Chain, Residue, Atom
-    
-    # Parse the PDB file
-    parser = PDBParser(QUIET=True)
-    structure = parser.get_structure('input_structure', pdb_file)
-    
-    # Get the first model, chain, and residue as the starting point
-    model = structure[0]
-    chain = model.child_list[0]  # Assumes single chain in input
-    
-    # Create a new structure for the fibril
-    fibril_structure = Structure.Structure('fibril_structure')
-    fibril_model = Model.Model(0)
-    fibril_structure.add(fibril_model)
-    
-    # Loop over the number of units
-    for i in range(n_units):
-        # Calculate the rotation matrix for the current unit
-        rotation_matrix = np.linalg.matrix_power(rotation, i)
-        
-        # Create a new chain for the current unit
-        new_chain = Chain.Chain(chr(65 + i))  # Chain names: A, B, C, ...
-        
-        # Copy residues from the original chain and apply transformations
-        for residue in chain:
-            new_residue = Residue.Residue(residue.id, residue.resname, residue.segid)
-            for atom in residue:
-                new_atom = Atom.Atom(atom.name, np.dot(atom.coord, rotation_matrix.T) + translation * i, atom.bfactor, atom.occupancy, atom.altloc, atom.fullname, atom.element)
-                new_residue.add(new_atom)
-            new_chain.add(new_residue)
-        
-        # Add the new chain to the fibril model
-        fibril_model.add(new_chain)
-    
-    # Save the fibril structure to a PDB file
-    io = PDBIO()
-    io.set_structure(fibril_structure)
-    io.save(output_file)
-
 
 def calculate_average_helical_parameters(pdb_file):
     parser = PDBParser(QUIET=True)
@@ -442,7 +375,7 @@ def calculate_average_helical_parameters(pdb_file):
 
     return rotation_angle, translation, axis, rmsd
 
-def build_fibril_from_scalar_with_biopython(pdb_file, rotation_angle, translation, axis, n_units, output_file):
+def build_fibril(pdb_file, rotation_angle, translation, axis, n_units, output_file):
     """
     Builds a fibril by applying rotations and translations to a chain from a given PDB file
     and assembling the results using Biopython.
