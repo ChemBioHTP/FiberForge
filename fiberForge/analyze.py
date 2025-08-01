@@ -100,7 +100,7 @@ def count_interchain_hydrogen_bonds(pdb_file, distance_cutoff=3.5):
                         dist = atom1 - atom2
                         if dist <= distance_cutoff:
                             hbonds += 1
-    return hbonds
+    return hbonds // len(chains)  # Average per chain pair
 
 def calculate_interchain_lj_energy(pdb_file, epsilon=0.1, sigma=3.5, cutoff=10.0):
     """

@@ -434,7 +434,7 @@ def create_pull_mdp(job):
     pull-group1-pbcatom     = {ref_atom_a_index + n_atom_per_chain * (job.sp.pull_chains[0])}
     pull-group2-pbcatom     = {ref_atom_b_index + n_atom_per_chain * (list(range(len(job.doc['protofibrils'][0])))[job.sp.pull_chains[1]])}
     pull_coord1_type        = umbrella  ; harmonic potential
-    pull_coord1_geometry    = distance  ; simple distance increase 
+    pull_coord1_geometry    = direction-periodic  ; simple distance increase 
     pull_coord1_dim         = Y Y Y  ; calculate the distance between the centers of mass in all three dimensions
     pull_coord1_groups      = 1 2
     pull_coord1_start       = yes       ; define initial COM distance > 0
