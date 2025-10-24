@@ -1,7 +1,11 @@
-API Documentation
-=================
+API Reference
+=============
 
 .. autosummary::
-   :toctree: autosummary
+   :toctree: api/
 
-   biomatsims.canvas
+   FiberForge.analyze
+   FiberForge.build
+   FiberForge.dataset
+   FiberForge.simulate
+   FiberForge.utils

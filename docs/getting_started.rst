@@ -1,4 +1,4 @@
 Getting Started
 ===============
 
-This page details how to get started with BioMatSims. 
+This is a basic getting started guide.
