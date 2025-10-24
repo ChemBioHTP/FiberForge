@@ -1,0 +1,15 @@
+﻿FiberForge.analyze
+==================
+
+.. automodule:: FiberForge.analyze
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      calculate_interchain_lj_energy
+      calculate_variable_over_time
+      count_interchain_hydrogen_bonds
+      estimate_elastic_modulus
+   

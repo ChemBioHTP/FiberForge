@@ -1,0 +1,24 @@
+﻿FiberForge.utils
+================
+
+.. automodule:: FiberForge.utils
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      add_hydrogens
+      add_line_at_line_number
+      calculate_n_residues
+      clean_structure
+      discontinuous_residue_position
+      extract_chain
+      find_bounding_box
+      remove_chains
+      remove_ligands_water_ions
+      rename_amino_acid
+      renumber_residues
+      search_pattern_in_consecutive_lines
+      single_to_triple
+   
