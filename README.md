@@ -1,6 +1,15 @@
 FiberForge
 ==============================
 
+# Installation
+
+```python
+conda install -f environment.yml
+conda activate ff
+pip install .
+```
+
+
 # Usage
 
 ## Fibril analysis and extension
