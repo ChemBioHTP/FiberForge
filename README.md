@@ -5,17 +5,19 @@ FiberForge
 
 ## Fibril analysis and extension
 ```python
-from FiberForge.Build import (
-  clean_structure
+from FiberForge.build import (
   identify_protofibrils,
   calculate_average_helical_parameters,
   build_fibril,
-  remove_chains,
   solvate_fibril
+)
+from FiberForge.utils import (
+    clean_structure,
+    remove_chains
 )
 
 # The path to your amyloid structure in PDB format
-pdb_file = "amyloid.pdb"
+pdb_file = "amyloid.pdb" # A classic is 2MXU (ABeta42)
 
 # Locate the protofibrils, returns List[dict[str, np.array(3)]]
 protofibrils = identify_protofibrils(pdb_file)
