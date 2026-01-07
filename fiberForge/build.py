@@ -272,7 +272,10 @@ def calculate_average_rotation_translation(pdb_file):
 def calculate_cross_sectional_area(pdb_file, probe_size=0.6):
 
     def project_onto_surface(vector_to_project, surface_normal):
-        surface_normal = surface_normal / np.linalg.norm(surface_normal)
+        if np.linalg.norm(surface_normal) == 0:
+            return vector_to_project
+        else:
+            surface_normal = surface_normal / np.linalg.norm(surface_normal)
         scalar_projection = np.dot(vector_to_project, surface_normal)
         vector_projection = scalar_projection * surface_normal
         projected_vector = vector_to_project - vector_projection

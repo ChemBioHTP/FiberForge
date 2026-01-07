@@ -67,6 +67,98 @@ def calculate_variable_over_time(xvg_file):
                 time_data.append(list(map(float, line.split())))
     return time_data
 
+
+def xvg_has_inflection_point(
+    xvg_file,
+    column=1,
+    smooth_window=101,
+    polyorder=3,
+    min_rel_slope_change=0.0005,
+):
+    """
+    Determine whether the .xvg file has a single maximum or no maxima at all.
+
+    Parameters
+    ----------
+    xvg_file : str
+        Path to the .xvg file.
+    column : int
+        Which column to analyze as Y (default 1, i.e., second column).
+    smooth_window : int
+        Window size for Savitzky–Golay smoothing (must be odd, default 101).
+    polyorder : int
+        Polynomial order for Savitzky–Golay filter (default 3).
+    min_rel_slope_change : float
+        Minimum relative change in slope to count as significant (fraction of y-range).
+
+    Returns
+    -------
+    is_unimodal_or_monotonic : bool
+        True if there is at most one maximum (i.e., zero or one significant inflection).
+    n_maxima : int
+        Number of significant maxima detected.
+    inflection_indices : list[int]
+        Indices where slope sign changes from positive to negative.
+    """
+    import numpy as np
+    from scipy.signal import savgol_filter
+
+    # --- Load data ---
+    data = []
+    with open(xvg_file, "r") as f:
+        for line in f:
+            if line.startswith(("#", "@")):
+                continue
+            parts = line.split()
+            if len(parts) > column:
+                data.append([float(x) for x in parts])
+    data = np.array(data)
+    if data.shape[0] == 0:
+        return True, 0, []
+
+    x = data[:, 0]
+    y = data[:, column]
+
+    # --- Basic validity checks ---
+    if len(y) < 5:
+        return True, 0, []  # too few points to have a meaningful max
+    if np.allclose(y, y[0]):
+        return True, 0, []  # completely flat
+
+    # --- Smooth data ---
+    if smooth_window >= len(y):
+        smooth_window = len(y) - (1 - len(y) % 2)  # make it odd and < len(y)
+    if smooth_window > 5:
+        y_smooth = savgol_filter(y, smooth_window, polyorder)
+    else:
+        y_smooth = y
+
+    # --- Normalize y for relative comparison ---
+    y_norm = (y_smooth - np.min(y_smooth)) / (np.ptp(y_smooth) + 1e-12)
+
+    # --- Compute first derivative ---
+    dy = np.gradient(y_norm, x)
+
+    # return dy
+
+    # --- Find slope sign changes ---
+    sign = np.sign(dy)
+    sign_changes = np.where(np.diff(sign) != 0)[0]
+
+    inflection_indices = []
+    y_range = np.ptp(y_norm)
+    for i in sign_changes:
+        delta = abs(dy[i + 1] - dy[i])
+        if delta >= min_rel_slope_change * y_range:
+            # Detect only +→− changes (maxima)
+            if dy[i] > 0 and dy[i + 1] < 0:
+                inflection_indices.append(i)
+
+    n_maxima = len(inflection_indices)
+    is_unimodal_or_monotonic = n_maxima <= 1
+
+    return is_unimodal_or_monotonic, n_maxima, inflection_indices
+
 def count_interchain_hydrogen_bonds(pdb_file, distance_cutoff=3.5):
     """
     Count the number of hydrogen bonds between chains in an amyloid structure.
